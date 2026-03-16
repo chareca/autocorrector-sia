@@ -5,6 +5,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
 
 \definecolor{codebg}{RGB}{245,245,245}
 
@@ -22,13 +23,19 @@
     showstringspaces=false
 }
 
-\title{Memoria Técnica: Mejora del Autocorrector}
-\author{Sistemas Inteligentes. Aplicaciones}
-\date{\today}
+\title{Optimización de un autocorrector - Memoria Técnica}
+\author{Eloy Urriens - Juan Pulgarín - Tomas Alignani - Nicolás Chareca}
+\date{22 de marzo de 2026}
 
 \begin{document}
 
 \maketitle
+
+\begin{abstract}
+Presentamos el proceso de desarrollo y optimización de un autocorrector basado inicialmente en unigramas y distancia de edición. A partir de esa implementación base, analizamos sus limitaciones y planteamos mejoras orientadas a incorporar información contextual mediante n-gramas y a refinar el coste de las operaciones de edición. El objetivo final es obtener un modelo más preciso y robusto, evaluado sobre conjuntos de validación y test independientes.
+\end{abstract}
+
+\clearpage
 
 \tableofcontents
 \newpage
@@ -42,12 +49,11 @@ La implementación base, desarrollada para la práctica, utiliza un corpus de en
 El propósito de este trabajo la implementación de una serie de mejoras para este corrector que lo transformen a un modelo más sofisticado. Para ello, planteamos las siguientes mejoras:
 
 \begin{itemize}
-    \item \textbf{Mejora Unigramas $\longrightarrow$  N-gramas:} Evolucionar el modelo de unigramas hacia bigramas o trigramas para capturar información contextual y mejorar la precisión de las sugerencias.
-    \item \textbf{Mejora Distancia de edición:} Modificar la penalización de las ediciones para considerar la cercanía física de las teclas en un teclado QWERTY.
+    \item \textbf{Modelo de lenguaje basado en n-gramas:} Evolucionar el modelo de unigramas hacia bigramas o trigramas para capturar información contextual y mejorar la precisión de las sugerencias.  permitirá corregir errores donde la palabra escrita existe en el diccionario pero no tiene sentido en la oración.
+    \item \textbf{Distancia de edición ponderada por teclado:} Modificar la penalización de las ediciones para considerar la cercanía física de las teclas en un teclado QWERTY.
 \end{itemize}
 
 Para evaluar el impacto de cada mejora, definimos conjuntos de datos de validación y test independientes para los distintos modelos formados por los métodos mencionados, permitiéndonos experimentar con los hiperparámetros del mismo (ej: n de los ngramas) y así obtener datos reales del funcionamiento de estos modelos con distintas configuraciones, para lograr un mejor entendimiento de los mismos.
-
 
 \section{Análisis del Sistema Actual}
 \subsection{Funcionamiento Base}
@@ -65,7 +71,7 @@ Como se mencionó en la introducción, el corpus se forma por 21 libros de Pío 
     \item $V$: tamaño total del corpus.
 \end{itemize}
 
-\paragraph{Generación de candidatos a distancia de edición.}
+\paragraph{Generación de palabras candidatas a X distancia de edición.}
 Dada una palabra de entrada, se generan todos los strings obtenibles (pertenecientes o no al corpus) aplicando las cuatro operaciones elementales:
 
 \begin{lstlisting}
@@ -87,10 +93,15 @@ def dos_ediciones(word: str, intercambiar: bool=False) -> set:
     return words_dos_ediciones
 \end{lstlisting}
 
-La función \texttt{corregir()} filtra los candidatos generados conservando solo aquellos presentes en el vocabulario, los ordena por $P(w)$ de mayor a menor y devuelve las $n$ más probables. Se prioriza siempre la distancia 1 sobre la 2; si la palabra original ya pertenece al vocabulario, se retorna directamente sin buscar candidatos.
+La función \texttt{corregir()} filtra las palabras generadas conservando 
+solo las que están presentes en el corpus, luego las ordena por $P(w)$ 
+(probabilidad de aparición) de mayor a menor y devuelve las $n$ más probables. 
+Priorizamos la distancia 1 sobre la 2, ya que es más probable que 
+se equivoque 1 vez a 2 veces, y si la palabra original ya 
+pertenece al corpus, se retorna directamente sin buscar correcciones.
 
 \paragraph{Distancia de edición mínima entre frases.}
-Para comparar la frase original con la corregida se implementa el algoritmo de Wagner–Fischer mediante programación dinámica. La matriz de costes $M$ de dimensiones $(|s_1|+1) \times (|s_2|+1)$ se rellena con la recurrencia:
+Para comparar la frase original con la corregida implementamos el algoritmo de \href{https://en.wikipedia.org/wiki/Wagner\%E2\%80\%93Fischer_algorithm}{Wagner-Fischer} mediante programación dinámica. La matriz de costes $M$ de dimensiones ($size_{frase1}+1 \times size_{frase2}+1$), en su posicion $[i, j]$ se rellena con la distancia de Levenshtein de la frase1[:i] y frase2[:j], utilizando la siguiente fórmula:
 
 \begin{equation}
     M[i,j] = \begin{cases}
@@ -99,20 +110,19 @@ Para comparar la frase original con la corregida se implementa el algoritmo de W
     \end{cases}
 \end{equation}
 
-El coste total de corrección de una frase es la suma de los costes individuales de cada par de palabras. Adicionalmente, se implementa un algoritmo recursivo sobre la matriz $M$ que enumera \emph{todos} los conjuntos óptimos de operaciones de edición (borrado, inserción y sustitución) necesarios para transformar cada palabra original en su versión corregida.
+El coste total de corrección de la frase es la suma de los costes individuales de cada par de palabras, obtenible en la posición M[$size_{frase1}, size_{frase2}$]. 
+
+Luego por último, implementamos una función recursiva encargada de obtener los pasos necesarios para transformar la frase original a la corregida, utilizando la matriz de costes $M$ y aplicando backtracking desde la posición M[$size_{frase1}, size_{frase2}$] hasta M[0, 0].
+
+\clearpage
 
 \section{Propuesta de Mejora}
 \subsection{Algoritmos Implementados}
-Describir los nuevos algoritmos o técnicas aplicadas.
+
 
 \subsection{Estructura del Código}
 \begin{lstlisting}
-# Ejemplo de código mejorado
-def mejorar_autocorrector(texto):
-    """Función de mejora"""
-    tokens = tokenizar(texto)
-    corregidos = [corregir_token(t) for t in tokens]
-    return " ".join(corregidos)
+# Poner codigo
 \end{lstlisting}
 
 \section{Resultados}

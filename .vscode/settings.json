@@ -1,0 +1,52 @@
+{
+  "latex-workshop.latex.autoBuild.run": "onSave",
+  "latex-workshop.latex.outDir": "%DIR%",
+  "latex-workshop.latex.tools": [
+    {
+      "name": "lualatex-with-locale",
+      "command": "lualatex",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "%DOC%"
+      ],
+      "env": {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "LANGUAGE": "C"
+      }
+    },
+    {
+      "name": "latexmk-lualatex-with-locale",
+      "command": "latexmk",
+      "args": [
+        "-lualatex",
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "%DOC%"
+      ],
+      "env": {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "LANGUAGE": "C"
+      }
+    }
+  ],
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "latexmk (lualatex, locale fixed)",
+      "tools": [
+        "latexmk-lualatex-with-locale"
+      ]
+    },
+    {
+      "name": "lualatex (locale fixed)",
+      "tools": [
+        "lualatex-with-locale"
+      ]
+    }
+  ],
+  "latex-workshop.latex.recipe.default": "first"
+}
