@@ -5,26 +5,29 @@ import re
 import pandas as pd
 import random
 
-
-class GeneradorDataset:
+class GeneradorMuestras:
     def __init__(self, ruta_corpus, ratio_error=0.1):
         self.ruta_corpus = ruta_corpus
         self.ratio_error = ratio_error
         self.corpus = []
         # Mapa simplificado de cercanía de teclado
         self.teclas_adyacentes = {
+            'q': 'wqa', 'w': 'qweas', 'e': 'wersd', 'r': 'rftdg', 't': 'tgyhu',
+            'y': 'yhguj', 'u': 'uijhk', 'i': 'iikjl', 'o': 'oolkp', 'p': 'ppo',
             'a': 'qwsz', 's': 'awedxz', 'd': 'erfcxs', 'f': 'rtgvcd',
             'g': 'tyhbvf', 'h': 'yujnbg', 'j': 'uikmnh', 'k': 'iolmj',
             'l': 'opk', 'z': 'asx', 'x': 'sdzc', 'c': 'dfxv', 'v': 'cfgb',
-            'b': 'vghn', 'n': 'bhjm', 'm': 'njk'
+            'b': 'vghn', 'n': 'bhjm', 'm': 'njk', 'á': 'qwsz', 'é': 'awedxz', 'í': 'erfcxs', 'ó': 'rtgvcd',
+            'ú': 'tyhbvf', 
         }
+        
 
     def cargar_corpus(self):
         with open(self.ruta_corpus, 'r', encoding='utf-8') as archivo:
             texto = archivo.read()
             frases_texto = re.split(r'[.!?]', texto)
 
-            for frase in frases_texto[:1000]:
+            for frase in frases_texto[:2000]:
                 #saca todo lo q no seanletras
                 limpia = re.sub(r'[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]', '', frase)
                 limpia = " ".join(limpia.split())
@@ -54,15 +57,24 @@ class GeneradorDataset:
             else: 
                 resultado.append(palabra)
         return ' '.join(resultado)
-    # falta generar el csv o donde se guarden las frases
+    
+    def generar_evaluacion(self, cantidad = 100):
+        #genera pares (frase_con_error, frase_correcta) para evaluar el modelo
+        pares = []
+        muestra = random.sample(self.corpus, min(cantidad, len(self.corpus)))
+        for frase in muestra:
+            frase_con_error = self.generar_frase_con_error(frase)
+            pares.append((frase_con_error, frase))
+        return pares
+
+    def testear(self, modelo, cantidad = 100):
+        pares = self.generar_evaluacion(cantidad)
+        correctas = 0
+        for frase_con_error, frase_correcta in pares:
+            correccion = modelo.corregir(frase_con_error)
+            if correccion == frase_correcta:
+                correctas += 1
+        return correctas / len(pares) if pares else 0
 
 
-#probar
-gen = GeneradorDataset('libros/LasFurias.txt', 0.5)
-gen.cargar_corpus()
 
-print(f"Frases cargadas: {len(gen.corpus)}")
-print("Ejemplo de frase cargada:")
-print(gen.corpus[1])
-print("\nEjemplo de frase con error:")
-print(gen.generar_frase_con_error(gen.corpus[1]))

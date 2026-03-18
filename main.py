@@ -1,5 +1,5 @@
 from typing import List, Tuple
-
+from test import GeneradorMuestras
 class Preprocesador:
     def __init__(self):
         pass
@@ -196,10 +196,10 @@ class Autocorrector:
 
 if __name__ == '__main__':
     prep = Preprocesador()
+    gen  = GeneradorMuestras('libros/LasFurias.txt', 0.5)
+    gen.cargar_corpus()
     X_train = prep.preprocesar()
-    X_val = ["frase_1...", "frase_2..."] # Ns si necesitaremos
-    X_test = ["frase_1...", "frase_2..."]
-
+    
     autocorrector = Autocorrector()
     autocorrector.fit(X_train)
-    frases_corregidas = autocorrector.corregir(X_test)
+    gen.testear(autocorrector,100) 
