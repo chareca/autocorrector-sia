@@ -4,12 +4,31 @@ class Preprocesador:
     def __init__(self):
         pass
 
+    def eliminar_signos(texto):
+        signos = [",", "!", ".", "?", "\n", "\t", "¿", "¡", ":", ";", 
+                "-", "_", "(", ")", "[", "]", "{", "}", "\"", "'","\\w", "\\W",
+                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+        for signo in signos:
+            texto = texto.replace(signo, " ")
+        return texto
+    
+    def preprocesar_documento(documento):
+        documento = self.eliminar_signos(documento) #definir self
+        return documento.lower().split()
+
     def preprocesar(self, rutas_ficheros: List[str]) -> List[str]:
         """
             Lee las frases que hay en cada uno de los ficheros, las preprocesa,
             y devuelve una lista con todas las frases de todos los ficheros.
         """
-        pass
+        textos = []
+        for documento in rutas_ficheros:
+            with open(documento, 'r', encoding='utf-8') as f:
+                texto = f.read()
+                texto_preprocesado = self.preprocesar_documento(texto)
+                textos.append(texto_preprocesado)
+        #no se si seria exactamente así, devuelve cada texto en minusculas y separado
+        return textos
 
 class SistemaDistancias:
     def __init__(self):
