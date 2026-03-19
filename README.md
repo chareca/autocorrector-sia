@@ -28,8 +28,8 @@ que no tienen sentido ponerlas allí, así que la liaríamos más (Creo). Así q
 sabemos que sí o sí estan mal, y para ello, consideramos las distancias, y para aumentar la precisión, también el contexto.
 
 ##### Archivos
-__main__.py : Carga los datos, entrena el autocorrector y prueba el autocorrector.
-generador_muestras.py : Carga los datos de los libros y genera frases erroneas.
-autocorrector.py : Tiene el sistema de distancias y el sistema de contexto junto con la lógica principal explicada anteriormente en la idea.
-sistema_distancias.py : Calcula las palabras más cercanas a otra y sus distancias.
-sistema_contexto.py : Calcula las probabilidades de aparición de las palabras candidatas a introducir en una posición de una frase.
+* __main__.py : Carga los datos, entrena el autocorrector y prueba el autocorrector.
+* generador_muestras.py : Carga los datos de los libros y genera frases erroneas.
+* autocorrector.py : Tiene el sistema de distancias y el sistema de contexto junto con la lógica principal explicada anteriormente en la idea.
+* sistema_distancias.py : Calcula las palabras más cercanas a otra y sus distancias.
+* sistema_contexto.py : Calcula las probabilidades de aparición de las palabras candidatas a introducir en una posición de una frase.
