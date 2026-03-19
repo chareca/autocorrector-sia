@@ -24,7 +24,8 @@ puntuación y va repitiendo todo esto por cada palabra hasta corregir una frase 
 Esta idea no contempla a las palabras que son correctas en el diccionario pero que estan fuera de contexto. Lo he pensado así porque si quisieramos
 contemplar esto, tendríamos intentar corregir cada palabra de la frase, independientemente de que exista o no en el vocabulario, y sinceramente, al
 tener más palabras bien escritas que palabras mal escritas en una frase, creo que las palabras que están bien escritas las cambiaríamos por palabras
-que no tienen sentido ponerlas allí, así que la liaríamos más (Creo).
+que no tienen sentido ponerlas allí, así que la liaríamos más (Creo). Así que la idea de nuestro autocorrector, es intentar corregir las palabras que
+sabemos que sí o sí estan mal, y para ello, consideramos las distancias, y para aumentar la precisión, también el contexto.
 
 ##### Archivos
 __main__.py : Carga los datos, entrena el autocorrector y prueba el autocorrector.
