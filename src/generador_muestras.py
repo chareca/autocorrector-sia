@@ -35,12 +35,12 @@ class GeneradorMuestras:
                 ruta_libro = self.ruta_directorio_libros + nombre_libro
 
             with open(ruta_libro, 'r', encoding='utf-8') as archivo:
-                texto = archivo.read()
+                texto = archivo.read().lower()
                 frases_texto = re.split(r'[.!?]', texto)
 
                 for frase in frases_texto:
                     #saca todo lo q no seanletras
-                    limpia = re.sub(r'[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]', '', frase)
+                    limpia = re.sub(r'[^a-záéíóúñ\s]', '', frase)
                     limpia = " ".join(limpia.split())
                     conteo_palabras = len(limpia.split())
                     if 5 <= conteo_palabras <= 20:
@@ -80,11 +80,17 @@ class GeneradorMuestras:
 
     def testear_modelo(self, modelo, cantidad = 100):
         pares = self.generar_frases_con_errores(cantidad)
+
         correctas = 0
         for frase_con_error, frase_correcta in pares:
-            correccion = modelo.corregir(frase_con_error)
-            if correccion == frase_correcta:
+            correcciones = modelo.corregir([frase_con_error])
+            if correcciones[0] == frase_correcta:
                 correctas += 1
+
+            print("Frase original: ", frase_correcta)
+            print("Frase original con errores: ", frase_con_error)
+            print("Frase corregida:", correcciones[0])
+            print("")
         return correctas / len(pares) if pares else 0
 
     def get_corpus(self):

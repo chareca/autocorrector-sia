@@ -1,3 +1,4 @@
+import re
 import numpy as np
 
 from typing import List
@@ -27,14 +28,17 @@ class Autocorrector:
         """ Corrige todas las frases que recibe """
         frases_corregidas = []
         for frase in frases:
+            frase_lower = frase.lower()
+            frase_limpia = re.sub(r'[^a-záéíóúñ\s]', '', frase_lower)
+            frase_split = frase_limpia.split()
+
             frase_corregida = []
-            frase_split = frase.split()
             for i, palabra in enumerate(frase_split):
                 if palabra in self._vocabulario:
                     frase_corregida.append(palabra)
                     continue
 
-                palabras_candidatas, distancias = self._sistema_distancias.predict(palabra, 2)
+                palabras_candidatas, distancias = self._sistema_distancias.predict(palabra, 10)
                 probs_palabras = self._sistema_contexto.predict(frase_split, i, palabras_candidatas)
                 
                 puntuaciones_palabras_candidatas = []
@@ -53,7 +57,7 @@ class Autocorrector:
                     puntuaciones_palabras_candidatas.append(puntuacion_total)
                 puntuaciones_palabras_candidatas = np.array(puntuaciones_palabras_candidatas)
 
-                pos = np.argmax(puntuaciones_palabras_candidatas[:, 1])
+                pos = np.argmax(puntuaciones_palabras_candidatas)
                 palabra_corregida = palabras_candidatas[pos]
                 frase_corregida.append(palabra_corregida)
                 
