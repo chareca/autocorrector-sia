@@ -1,13 +1,14 @@
 #2 datasets, uno de train y otro de test, que el de train contenga frases
 #aleatorias del corpus (carpeta libros) y el de test que tenga las mismas frases mal escritas, para que el modelo aprenda a corregirla
 import re
+import os
 
 import pandas as pd
 import random
 
 class GeneradorMuestras:
-    def __init__(self, ruta_corpus, ratio_error=0.1):
-        self.ruta_corpus = ruta_corpus
+    def __init__(self, ruta_directorio_libros, ratio_error=0.1):
+        self.ruta_directorio_libros = ruta_directorio_libros
         self.ratio_error = ratio_error
         self.corpus = []
         # Mapa simplificado de cercanía de teclado
@@ -20,22 +21,32 @@ class GeneradorMuestras:
             'b': 'vghn', 'n': 'bhjm', 'm': 'njk', 'á': 'qwsz', 'é': 'awedxz', 'í': 'erfcxs', 'ó': 'rtgvcd',
             'ú': 'tyhbvf', 
         }
-        
+        self._cargar_corpus()
 
-    def cargar_corpus(self):
-        with open(self.ruta_corpus, 'r', encoding='utf-8') as archivo:
-            texto = archivo.read()
-            frases_texto = re.split(r'[.!?]', texto)
+    def _cargar_corpus(self):
+        nombres_libros = os.listdir(self.ruta_directorio_libros)
+        for nombre_libro in nombres_libros:
+            if nombre_libro[-4:] != ".txt":
+                continue
 
-            for frase in frases_texto[:2000]:
-                #saca todo lo q no seanletras
-                limpia = re.sub(r'[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]', '', frase)
-                limpia = " ".join(limpia.split())
-                conteo_palabras = len(limpia.split())
-                if 5 <= conteo_palabras <= 20:
-                    self.corpus.append(limpia)
+            if self.ruta_directorio_libros[-1] != "/":
+                ruta_libro = self.ruta_directorio_libros + "/" + nombre_libro
+            else:
+                ruta_libro = self.ruta_directorio_libros + nombre_libro
 
-    def generar_frase_con_error(self, frase):
+            with open(ruta_libro, 'r', encoding='utf-8') as archivo:
+                texto = archivo.read()
+                frases_texto = re.split(r'[.!?]', texto)
+
+                for frase in frases_texto:
+                    #saca todo lo q no seanletras
+                    limpia = re.sub(r'[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]', '', frase)
+                    limpia = " ".join(limpia.split())
+                    conteo_palabras = len(limpia.split())
+                    if 5 <= conteo_palabras <= 20:
+                        self.corpus.append(limpia)
+
+    def modificar_frase_con_errores(self, frase):
         palabras = frase.split()
         resultado = []
         for palabra in palabras:
@@ -58,17 +69,17 @@ class GeneradorMuestras:
                 resultado.append(palabra)
         return ' '.join(resultado)
     
-    def generar_evaluacion(self, cantidad = 100):
+    def generar_frases_con_errores(self, cantidad = 100):
         #genera pares (frase_con_error, frase_correcta) para evaluar el modelo
         pares = []
         muestra = random.sample(self.corpus, min(cantidad, len(self.corpus)))
         for frase in muestra:
-            frase_con_error = self.generar_frase_con_error(frase)
+            frase_con_error = self.modificar_frase_con_errores(frase)
             pares.append((frase_con_error, frase))
         return pares
 
-    def testear(self, modelo, cantidad = 100):
-        pares = self.generar_evaluacion(cantidad)
+    def testear_modelo(self, modelo, cantidad = 100):
+        pares = self.generar_frases_con_errores(cantidad)
         correctas = 0
         for frase_con_error, frase_correcta in pares:
             correccion = modelo.corregir(frase_con_error)
@@ -76,5 +87,5 @@ class GeneradorMuestras:
                 correctas += 1
         return correctas / len(pares) if pares else 0
 
-
-
+    def get_corpus(self):
+        return self.corpus.copy()

@@ -1,50 +1,4 @@
-from typing import List, Tuple
-from test import GeneradorMuestras
-class Preprocesador:
-    def __init__(self):
-        pass
-
-    def eliminar_signos(texto):
-        signos = [",", "!", ".", "?", "\n", "\t", "¿", "¡", ":", ";", 
-                "-", "_", "(", ")", "[", "]", "{", "}", "\"", "'","\\w", "\\W",
-                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-        for signo in signos:
-            texto = texto.replace(signo, " ")
-        return texto
-    
-    def preprocesar_documento(documento):
-        documento = self.eliminar_signos(documento) #definir self
-        return documento.lower().split()
-
-    def preprocesar(self, rutas_ficheros: List[str]) -> List[str]:
-        """
-            Lee las frases que hay en cada uno de los ficheros, las preprocesa,
-            y devuelve una lista con todas las frases de todos los ficheros.
-        """
-        textos = []
-        for documento in rutas_ficheros:
-            with open(documento, 'r', encoding='utf-8') as f:
-                texto = f.read()
-                texto_preprocesado = self.preprocesar_documento(texto)
-                textos.append(texto_preprocesado)
-        #no se si seria exactamente así, devuelve cada texto en minusculas y separado
-        return textos
-
-class SistemaDistancias:
-    def __init__(self):
-        pass
-
-    def fit(self, X_train: List[str]):
-        pass
-
-    def predict(self, palabra: str, max_distancia: float) -> Tuple[List[str], List[float]]:
-        """
-            Devuelve una lista de las palabras más cercanas de tal forma que la 
-            palabra de menor distancia esté en la primera posición y las de mayor
-            distancia en la última posicion. Tambien devuelve las distancias de
-            cada palabra.
-          """
-        pass
+from typing import List
 
 class SistemaContexto:
     def __init__(self, min_apperance: int=10, size_ngram: int=2):
@@ -90,7 +44,7 @@ class SistemaContexto:
         unknow_label = "<unk>"
         for i, phrase_split in enumerate(X_train_split):
             for j, word in enumerate(phrase_split):
-                if freqs_words[word] < self._min_appearance:
+                if freqs_words[word] < self._min_apperance:
                     X_train_split[i][j] = unknow_label
         return X_train_split
 
@@ -99,16 +53,19 @@ class SistemaContexto:
         
         columns = {'</s>': 0}
         for word in self._vocabulary:
-            columns[word] = len(columns)
+            if word != "</s>":
+                columns[word] = len(columns)
         
         ngrams = freqs_ngrams_n.keys()
-        rows = {['<s>' for i in range(self._size_ngram - 1)]: 0}
+        start_unk = " ".join(['<s>' for i in range(self._size_ngram - 1)])
+        rows = {start_unk: 0}
         for ngram in ngrams:
             ngram_split = ngram.split()
             ngram_n_1 = ' '.join(ngram_split[:-1])
 
             if not(ngram_n_1 in rows):
-                rows[ngram_n_1] = len(rows)
+                if ngram_n_1 != start_unk:
+                    rows[ngram_n_1] = len(rows)
 
         matrix = [[1 / len(self._vocabulary) for j in range(len(columns))] for i in range(len(rows))]
         for ngram in ngrams:
@@ -126,7 +83,7 @@ class SistemaContexto:
         freqs_n_1 = {}
         n = self._size_ngram
         for phrase in X_train_split:
-            for i in range(0, len(phrase) - n):
+            for i in range(0, len(phrase) - n + 1):
                 ngram_n = ' '.join(phrase[i:i + n])
                 if ngram_n in freqs_n:
                     freqs_n[ngram_n] += 1
@@ -147,7 +104,7 @@ class SistemaContexto:
                 vocabulary.add(word)
         return vocabulary
 
-    def predict(self, frase: List[str], pos_pal: int, palabras_posibles: str) -> str:
+    def predict(self, frase: List[str], pos_pal: int, palabras_posibles: str) -> List[float]:
         """ 
             Se le da la frase, la posición de la palabra a corregir, y las
             posibles palabras candidatas a ser la corrección de dicha palabra.
@@ -163,62 +120,14 @@ class SistemaContexto:
             for i, word in enumerate(ngram_n_1):
                 if not(word in self._vocabulary):
                     ngram_n_1[i] = "<unk>"
+            ngram_n_1 = " ".join(ngram_n_1)
 
-            prob = 0
+            prob = 1 / len(self._vocabulary)
             if not(ngram_n_1 in self._rows_ngram_matrix) and candidate_word in self._columns_ngram_matrix:
-                prob = self._ngram_matrix[self._rows_ngram_matrix[unknow_row]][self._columns_ngram_matrix[candidate_word]]
+                if unknow_row in self._rows_ngram_matrix:
+                    prob = self._ngram_matrix[self._rows_ngram_matrix[unknow_row]][self._columns_ngram_matrix[candidate_word]]
             elif ngram_n_1 in self._rows_ngram_matrix and candidate_word in self._columns_ngram_matrix:
                 prob = self._ngram_matrix[self._rows_ngram_matrix[ngram_n_1]][self._columns_ngram_matrix[candidate_word]]
             probs.append(prob)
 
         return probs
-
-class Autocorrector:
-    def __init__(self):
-        self._sistema_distancias = SistemaDistancias()
-        self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=2)
-        self._vocabulario = None
-
-    def fit(self, X_train: List[str]) -> None:
-        """ Se entrena con una lista de frases """
-        self._sistema_distancias.fit(X_train)
-        self._sistema_contexto.fit(X_train)
-        self._calc_vocabulary(X_train)
-
-    def _calc_vocabulary(self, X_train: List[str]):
-        self._vocabulario = set()
-        for frase in X_train:
-            for pal in frase.split():
-                self._vocabulario.add(pal)
-
-    def corregir(self, frases: List[str]) -> List[str]:
-        """ Corrige todas las frases que recibe """
-        frases_corregidas = []
-        for frase in frases:
-            frase_corregida = []
-            for i, palabra in enumerate(frase.split()):
-                if palabra in self._vocabulario:
-                    frase_corregida.append(palabra)
-                    continue
-
-                palabras_candidatas, distancias = self._sistema_distancias.predict(palabra, 2)
-                probs_palabras = self._sistema_contexto.predict(frase, i, palabras_candidatas)
-                
-                palabras_candidatas_ordenadas = []
-                for palabra, distancia, prob in zip(palabras_candidatas, distancias, probs_palabras):
-                    palabras_candidatas_ordenadas.append((palabra, distancia, prob))
-                palabras_candidatas_ordenadas = sorted(palabras_candidatas_ordenadas, key=lambda x: (x[1], -x[2]))
-                palabra_corregida = palabras_candidatas_ordenadas[0]
-                frase_corregida.append(palabra_corregida)
-            frases_corregidas.append(frase_corregida)
-        return frases_corregidas
-
-if __name__ == '__main__':
-    prep = Preprocesador()
-    gen  = GeneradorMuestras('libros/LasFurias.txt', 0.5)
-    gen.cargar_corpus()
-    X_train = prep.preprocesar()
-    
-    autocorrector = Autocorrector()
-    autocorrector.fit(X_train)
-    gen.testear(autocorrector,100) 
