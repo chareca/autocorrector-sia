@@ -7,29 +7,26 @@ class SistemaDistancias:
     def __init__(self):
         self._words = {}
         self._distances = {}
+        self._alphabet = "abcdefghijklmnñopqrstuvwxyzáéíóú"
+        self._replacement_scale = 4.0
+        self._one_edit_cache = {}
+        self._two_edits_cache = {}
 
     def fit(self, X_train: List[str]):
+        self._one_edit_cache = {}
+        self._two_edits_cache = {}
         self._create_words_freqs(X_train)
         self._create_distances()
 
     def _create_words_freqs(self, X_train: List[str]):
         self._words = {}
         for frase in X_train:
-            linea = frase.lower()
-            linea = re.sub(r'[^\w\s]','', linea)
+            linea = self._normalize_phrase(frase)
 
             for word in linea.split():
                 self._words[word] = self._words.get(word,0) + 1
     
     def _create_distances(self):
-        tildes = {
-            "á": "a",
-            "é": "e",
-            "í": "i",
-            "ó": "o",
-            "ú": "u"
-        }
-
         self._distances = {}
         matrix = self._position_matrix()
         keys = list(matrix.keys())
@@ -37,7 +34,7 @@ class SistemaDistancias:
         for i in range(len(keys)):
             for j in range(len(keys)):
                 string = keys[i] + keys[j]
-                self._distances[string] = self._euclidean(values[i], values[j])
+                self._distances[string] = self._euclidean(values[i], values[j]) / self._replacement_scale
 
     def _position_matrix(self):
         filas = ["qwertyuiop", "asdfghjklñ", "zxcvbnm"]
@@ -66,31 +63,48 @@ class SistemaDistancias:
             raise ValueError(["[ERROR]: Introduce solo un string de 2 letras o dos letras por separado."])
         return "".join(sorted(letter1+letter2))
 
-    def predict(self, palabra: str, max_correciones: int, intercambiar=False) -> Tuple[List[str], List[float]]:
+    def _normalize_phrase(self, phrase: str) -> str:
+        phrase = phrase.lower()
+        return re.sub(r'[^a-záéíóúñ\s]', ' ', phrase)
+
+    def _normalize_word(self, word: str) -> str:
+        word = word.lower()
+        return re.sub(r'[^a-záéíóúñ]', '', word)
+
+    def predict(self, palabra: str, max_correciones: int, intercambiar=True) -> Tuple[List[str], List[float]]:
         """
             Devuelve una lista de las palabras más cercanas de tal forma que la 
             palabra de menor distancia esté en la primera posición y las de mayor
             distancia en la última posicion. Tambien devuelve las distancias de
             cada palabra.
           """
+        palabra = self._normalize_word(palabra)
+        if max_correciones <= 0:
+            return [], []
+        if palabra in self._words:
+            return [palabra], [0.0]
+
         for words_posibles in [self._una_edicion(palabra, intercambiar), self._dos_ediciones(palabra, intercambiar)]:
-            validas = {}
+            ranking = []
             for word in words_posibles:
                 if word in self._words:
-                    validas[word] = self._words[word]
-            validas_sort = sorted(validas.items(), key=lambda x: x[1], reverse=True)
-        
-            if len(validas_sort) > 0:
-                words = []
-                costes = []
-                minimo = min(len(validas_sort), max_correciones)
-                for tupla in validas_sort[:minimo]:
-                    costes.append(self._calcular_coste_edicion_palabra(palabra, tupla[0]))
-                    words.append(tupla[0])
+                    distance = self._calcular_coste_edicion_palabra(palabra, word)
+                    frequency = self._words[word]
+                    ranking.append((word, distance, frequency))
+
+            if len(ranking) > 0:
+                ranking.sort(key=lambda x: (x[1], -x[2], x[0]))
+                top_candidates = ranking[:max_correciones]
+                words = [word for word, _, _ in top_candidates]
+                costes = [distance for _, distance, _ in top_candidates]
                 return words, costes
-        return [palabra], [0]
+        return [palabra], [0.0]
 
     def _una_edicion(self, word:str, intercambiar: bool=False) ->set:
+        cache_key = (word, intercambiar)
+        if cache_key in self._one_edit_cache:
+            return self._one_edit_cache[cache_key]
+
         set1 = self._insert(word)
         set2 = self._delete(word)
         set3 = self._replace(word)
@@ -100,20 +114,25 @@ class SistemaDistancias:
             set4 = self._exchange(word)
             words_one_edition = set1.union(set2, set3, set4)
 
+        self._one_edit_cache[cache_key] = words_one_edition
         return words_one_edition
 
     def _dos_ediciones(self, word:str,intercambiar:bool =False) ->set:
+        cache_key = (word, intercambiar)
+        if cache_key in self._two_edits_cache:
+            return self._two_edits_cache[cache_key]
+
         palabras_ed1 = self._una_edicion(word, intercambiar)
         palabras_ed2 = set()
         for palabra in palabras_ed1:
             palabras_ed2 = palabras_ed2.union(self._una_edicion(palabra, intercambiar))
+        self._two_edits_cache[cache_key] = palabras_ed2
         return palabras_ed2
     
     def _insert(self, word: str) -> set:
-        alphabet = 'abcdefghijklmnñopqrstuvwxyz'
         words_created = set()
         for i in range(len(word) + 1):
-            for char in alphabet:
+            for char in self._alphabet:
                 new_word = word[:i] + char + word[i:]
                 words_created.add(new_word)
         
@@ -128,10 +147,9 @@ class SistemaDistancias:
         return words_created
         
     def _replace(self, word:str) ->set:
-        alphabet = 'abcdefghijklmnopqrstuvwxyz'
         words_created = set()
-        for i in range(len(word)): #hola
-            for char in alphabet:
+        for i in range(len(word)):
+            for char in self._alphabet:
                 new_word = word[:i] + char + word[i+1:]
                 words_created.add(new_word)
 
@@ -149,7 +167,7 @@ class SistemaDistancias:
         self,
         palabra_original: str,
         palabra_corregida: str,
-    ) -> tuple[int, np.ndarray]:
+    ) -> float:
     
         coste_insertar = 1
         coste_borrar = 1
@@ -170,9 +188,13 @@ class SistemaDistancias:
                 if palabra_original[i - 1] == palabra_corregida[j - 1]:
                     matriz[i, j] = matriz[i - 1, j - 1]
                 else:
-                    coste_reemplazar = self._distances[palabra_original[i - 1] + palabra_corregida[j - 1]]
-                    costes_manipulaciones = [coste_borrar, coste_insertar, coste_reemplazar]
-                    costes_anteriores = [matriz[i - 1, j], matriz[i, j - 1], matriz[i - 1, j - 1]]
-                    pos = np.argmin(costes_anteriores)
-                    matriz[i, j] = costes_anteriores[pos] + costes_manipulaciones[pos]
-        return matriz[-1, -1]
+                    coste_reemplazar = self._distances.get(
+                        palabra_original[i - 1] + palabra_corregida[j - 1],
+                        1.0,
+                    )
+                    matriz[i, j] = min(
+                        matriz[i - 1, j] + coste_borrar,
+                        matriz[i, j - 1] + coste_insertar,
+                        matriz[i - 1, j - 1] + coste_reemplazar,
+                    )
+        return float(matriz[-1, -1])
