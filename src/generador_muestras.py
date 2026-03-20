@@ -79,7 +79,7 @@ class GeneradorMuestras:
             pares.append((frase_con_error, frase))
         return pares
 
-    def testear_modelo(self, modelo, cantidad = 100):
+    def testear_modelo(self, modelo, cantidad = 100, modo='combinado'):
         start = time.perf_counter()
         sistema = modelo._sistema_distancias
         pares = self.generar_frases_con_errores(cantidad)
@@ -92,7 +92,8 @@ class GeneradorMuestras:
         #para la precision
         palabras_correctas =0
         total_palabras = 0
-        predicciones = modelo.corregir([par[0] for par in pares])
+        
+        predicciones = modelo.corregir([par[0] for par in pares], modo=modo)
         print("frases corregidas tardo: ", time.perf_counter() - start, " segundos")
         frases_correctas = [par[1] for par in pares]
         frases_error = [par[0] for par in pares]

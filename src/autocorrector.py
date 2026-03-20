@@ -24,8 +24,13 @@ class Autocorrector:
             for pal in frase.split():
                 self._vocabulario.add(pal)
 
-    def corregir(self, frases: List[str]) -> List[str]:
-        """ Corrige todas las frases que recibe """
+    def corregir(self, frases: List[str], modo: str = "combinado") -> List[str]:
+        """ Corrige todas las frases que recibe.
+            modo: 'solo_distancias' | 'solo_contexto' | 'combinado'
+        """
+        if modo not in {"solo_distancias", "solo_contexto", "combinado"}:
+            raise ValueError("modo inválido. Use: 'solo_distancias', 'solo_contexto' o 'combinado'")
+
         frases_corregidas = []
         for frase in frases:
             frase_lower = frase.lower()
@@ -44,6 +49,7 @@ class Autocorrector:
                 puntuaciones_palabras_candidatas = []
                 min_distancia, max_distancia = np.min(distancias), np.max(distancias)
                 min_prob, max_prob = np.min(probs_palabras), np.max(probs_palabras)
+
                 for palabra, distancia, prob in zip(palabras_candidatas, distancias, probs_palabras):
                     puntuacion_distancia = 0
                     if min_distancia != max_distancia:
@@ -53,14 +59,21 @@ class Autocorrector:
                     if min_prob != max_prob:
                         puntuacion_probabilidad = (prob - min_prob) / (max_prob - min_prob)
                     
-                    puntuacion_total = (puntuacion_distancia + puntuacion_probabilidad) / 2
-                    puntuaciones_palabras_candidatas.append(puntuacion_total)
-                puntuaciones_palabras_candidatas = np.array(puntuaciones_palabras_candidatas)
+                    if modo == "solo_distancias":
+                        puntuacion_total = puntuacion_distancia
+                    elif modo == "solo_contexto":
+                        puntuacion_total = puntuacion_probabilidad
+                    else:  # combinado
+                        puntuacion_total = (puntuacion_distancia + puntuacion_probabilidad) / 2
 
+                    puntuaciones_palabras_candidatas.append(puntuacion_total)
+
+                puntuaciones_palabras_candidatas = np.array(puntuaciones_palabras_candidatas)
                 pos = np.argmax(puntuaciones_palabras_candidatas)
                 palabra_corregida = palabras_candidatas[pos]
                 frase_corregida.append(palabra_corregida)
                 
             frase_corregida = " ".join(frase_corregida)
             frases_corregidas.append(frase_corregida)
+
         return frases_corregidas

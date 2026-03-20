@@ -19,4 +19,6 @@ if __name__ == '__main__':
     autocorrector.fit(X_train)
 
     # Evaluación de resultados
-    generador.testear_modelo(autocorrector, cantidad=cantidad_frases_test)
+    for modo in ["solo_distancias", "solo_contexto", "combinado"]:
+        print(f"\n=== Evaluación: {modo} ===")
+        generador.testear_modelo(autocorrector, cantidad=cantidad_frases_test, modo=modo)
