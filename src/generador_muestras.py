@@ -101,6 +101,10 @@ class GeneradorMuestras:
         frases_error = [par[0] for par in pares]
         
         for frase_pred, frase_corr, frase_err in zip(predicciones, frases_correctas, frases_error):
+            print("    Frase original: ", frase_corr)
+            print("    Frase original con errores: ", frase_err)
+            print("    Frase corregida: ", frase_pred)
+            print("")
             palabras_pred = frase_pred.split()
             palabras_corr = frase_corr.split()
             palabras_err = frase_err.split()
