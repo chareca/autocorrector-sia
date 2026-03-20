@@ -9,12 +9,8 @@ class SistemaDistancias:
         self._distances = {}
         self._alphabet = "abcdefghijklmnñopqrstuvwxyzáéíóú"
         self._replacement_scale = 4.0
-        self._one_edit_cache = {}
-        self._two_edits_cache = {}
 
     def fit(self, X_train: List[str]):
-        self._one_edit_cache = {}
-        self._two_edits_cache = {}
         self._create_words_freqs(X_train)
         self._create_distances()
 
@@ -56,13 +52,6 @@ class SistemaDistancias:
         pos2 = np.array(pos2)
         return np.sqrt(np.sum((pos1-pos2)**2))
 
-    def _order_ascii(self, letter1, letter2=None):
-        if letter2 is None and len(letter1) == 2:
-            letter2 = letter1[1]
-        elif letter2 is None:
-            raise ValueError(["[ERROR]: Introduce solo un string de 2 letras o dos letras por separado."])
-        return "".join(sorted(letter1+letter2))
-
     def _normalize_phrase(self, phrase: str) -> str:
         phrase = phrase.lower()
         return re.sub(r'[^a-záéíóúñ\s]', ' ', phrase)
@@ -100,33 +89,24 @@ class SistemaDistancias:
                 return words, costes
         return [palabra], [0.0]
 
-    def _una_edicion(self, word:str, intercambiar: bool=False) ->set:
-        cache_key = (word, intercambiar)
-        if cache_key in self._one_edit_cache:
-            return self._one_edit_cache[cache_key]
-
+    def _una_edicion(self, word: str, intercambiar: bool = False) -> set:
         set1 = self._insert(word)
         set2 = self._delete(word)
         set3 = self._replace(word)
+
         if not intercambiar:
-            words_one_edition = set1.union(set2, set3)
-        else:
-            set4 = self._exchange(word)
-            words_one_edition = set1.union(set2, set3, set4)
+            return set1.union(set2, set3)
 
-        self._one_edit_cache[cache_key] = words_one_edition
-        return words_one_edition
+        set4 = self._exchange(word)
+        return set1.union(set2, set3, set4)
 
-    def _dos_ediciones(self, word:str,intercambiar:bool =False) ->set:
-        cache_key = (word, intercambiar)
-        if cache_key in self._two_edits_cache:
-            return self._two_edits_cache[cache_key]
-
+    def _dos_ediciones(self, word: str, intercambiar: bool = False) -> set:
         palabras_ed1 = self._una_edicion(word, intercambiar)
         palabras_ed2 = set()
+
         for palabra in palabras_ed1:
-            palabras_ed2 = palabras_ed2.union(self._una_edicion(palabra, intercambiar))
-        self._two_edits_cache[cache_key] = palabras_ed2
+            palabras_ed2.update(self._una_edicion(palabra, intercambiar))
+
         return palabras_ed2
     
     def _insert(self, word: str) -> set:

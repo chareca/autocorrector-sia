@@ -41,7 +41,7 @@ class GeneradorMuestras:
 
                 for frase in frases_texto:
                     #saca todo lo q no seanletras
-                    limpia = re.sub(r'[^a-záéíóúñ\s]', '', frase)
+                    limpia = re.sub(r'[^a-záéíóúñ\s]', ' ', frase)
                     limpia = " ".join(limpia.split())
                     conteo_palabras = len(limpia.split())
                     if 5 <= conteo_palabras <= 20:
@@ -79,24 +79,27 @@ class GeneradorMuestras:
             pares.append((frase_con_error, frase))
         return pares
 
-    def testear_modelo(self, modelo, cantidad = 100, modo='combinado'):
-        start = time.perf_counter()
+    def testear_modelo(self, modelo, cantidad = 100, modo='combinado',pares=None):
         sistema = modelo._sistema_distancias
-        pares = self.generar_frases_con_errores(cantidad)
+        start = time.perf_counter()
+        if pares is None:
+            pares = self.generar_frases_con_errores(cantidad)
         print("frases con errores generadas en: ", time.perf_counter() - start, " segundos")
         #vamos a evaluar %precision palabras = (palabras_correctas / total_palabras)*100
         # y % mejora = (1 - (dist_final_total / dist_inicial_total))*100
+
         #para la mejora
         distancia_inicial= 0
         distancia_final = 0
         #para la precision
         palabras_correctas =0
         total_palabras = 0
-        
         predicciones = modelo.corregir([par[0] for par in pares], modo=modo)
         print("frases corregidas tardo: ", time.perf_counter() - start, " segundos")
+
         frases_correctas = [par[1] for par in pares]
         frases_error = [par[0] for par in pares]
+        
         for frase_pred, frase_corr, frase_err in zip(predicciones, frases_correctas, frases_error):
             palabras_pred = frase_pred.split()
             palabras_corr = frase_corr.split()
@@ -108,8 +111,9 @@ class GeneradorMuestras:
                 distancia_inicial += sistema._calcular_coste_edicion_palabra(p_err, p_corr)
                 distancia_final += sistema._calcular_coste_edicion_palabra(p_pred, p_corr)
 
-        precision = (palabras_correctas / total_palabras)*100
-        mejora = (1 - (distancia_final / distancia_inicial))*100
+        precision = (palabras_correctas / total_palabras) * 100 if total_palabras else 0.0
+        mejora = 0.0 if distancia_inicial == 0 else (1 - (distancia_final / distancia_inicial)) * 100
+
 
         print(f"Precision por palabra: {precision:.2f}%")
         print(f"Porcentaje de mejora: {mejora:.2f}%")

@@ -34,7 +34,7 @@ class Autocorrector:
         frases_corregidas = []
         for frase in frases:
             frase_lower = frase.lower()
-            frase_limpia = re.sub(r'[^a-záéíóúñ\s]', '', frase_lower)
+            frase_limpia = re.sub(r'[^a-záéíóúñ\s]', ' ', frase_lower)
             frase_split = frase_limpia.split()
 
             frase_corregida = []
