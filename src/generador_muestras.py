@@ -5,6 +5,7 @@ import os
 
 import pandas as pd
 import random
+import time
 
 class GeneradorMuestras:
     def __init__(self, ruta_directorio_libros, ratio_error=0.1):
@@ -79,19 +80,39 @@ class GeneradorMuestras:
         return pares
 
     def testear_modelo(self, modelo, cantidad = 100):
+        start = time.perf_counter()
+        sistema = modelo._sistema_distancias
         pares = self.generar_frases_con_errores(cantidad)
+        print("frases con errores generadas en: ", time.perf_counter() - start, " segundos")
+        #vamos a evaluar %precision palabras = (palabras_correctas / total_palabras)*100
+        # y % mejora = (1 - (dist_final_total / dist_inicial_total))*100
+        #para la mejora
+        distancia_inicial= 0
+        distancia_final = 0
+        #para la precision
+        palabras_correctas =0
+        total_palabras = 0
+        predicciones = modelo.corregir([par[0] for par in pares])
+        print("frases corregidas tardo: ", time.perf_counter() - start, " segundos")
+        frases_correctas = [par[1] for par in pares]
+        frases_error = [par[0] for par in pares]
+        for frase_pred, frase_corr, frase_err in zip(predicciones, frases_correctas, frases_error):
+            palabras_pred = frase_pred.split()
+            palabras_corr = frase_corr.split()
+            palabras_err = frase_err.split()
+            total_palabras += len(palabras_corr)
+            for p_pred, p_corr, p_err in zip(palabras_pred, palabras_corr, palabras_err):
+                if p_pred == p_corr:
+                    palabras_correctas += 1
+                distancia_inicial += sistema._calcular_coste_edicion_palabra(p_err, p_corr)
+                distancia_final += sistema._calcular_coste_edicion_palabra(p_pred, p_corr)
 
-        correctas = 0
-        for frase_con_error, frase_correcta in pares:
-            correcciones = modelo.corregir([frase_con_error])
-            if correcciones[0] == frase_correcta:
-                correctas += 1
+        precision = (palabras_correctas / total_palabras)*100
+        mejora = (1 - (distancia_final / distancia_inicial))*100
 
-            print("Frase original: ", frase_correcta)
-            print("Frase original con errores: ", frase_con_error)
-            print("Frase corregida:", correcciones[0])
-            print("")
-        return correctas / len(pares) if pares else 0
+        print(f"Precision por palabra: {precision:.2f}%")
+        print(f"Porcentaje de mejora: {mejora:.2f}%")
+
 
     def get_corpus(self):
         return self.corpus.copy()

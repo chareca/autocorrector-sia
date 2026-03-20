@@ -4,8 +4,8 @@ from autocorrector import Autocorrector
 if __name__ == '__main__':
     # Configuración
     ratio_error = 0.5
-    ruta_directorio_libros = "autocorrector-sia/libros"
-    cantidad_frases_test = 50
+    ruta_directorio_libros = ".\libros"
+    cantidad_frases_test = 20
 
     # Carga de datos
     generador = GeneradorMuestras(
@@ -19,4 +19,4 @@ if __name__ == '__main__':
     autocorrector.fit(X_train)
 
     # Evaluación de resultados
-    print(generador.testear_modelo(autocorrector, cantidad=cantidad_frases_test))
+    generador.testear_modelo(autocorrector, cantidad=cantidad_frases_test)
