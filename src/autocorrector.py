@@ -11,6 +11,7 @@ class Autocorrector:
         self._sistema_distancias = SistemaDistancias()
         self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=2)
         self._vocabulario = None
+        
 
     def fit(self, X_train: List[str]) -> None:
         """ Se entrena con una lista de frases """
@@ -44,8 +45,12 @@ class Autocorrector:
                     continue
 
                 palabras_candidatas, distancias = self._sistema_distancias.predict(palabra, 10)
-                probs_palabras = self._sistema_contexto.predict(frase_split, i, palabras_candidatas)
-                
+
+                if modo == "solo_distancias":
+                    probs_palabras = [0.0] * len(palabras_candidatas)
+                else:
+                    probs_palabras = self._sistema_contexto.predict(frase_split, i, palabras_candidatas)
+ 
                 puntuaciones_palabras_candidatas = []
                 min_distancia, max_distancia = np.min(distancias), np.max(distancias)
                 min_prob, max_prob = np.min(probs_palabras), np.max(probs_palabras)
