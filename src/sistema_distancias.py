@@ -175,10 +175,8 @@ class SistemaDistancias:
                 if palabra_original[i - 1] == palabra_corregida[j - 1]:
                     coste_reemplazar = 0.0
                 else:
-                    coste_reemplazar = self._distances.get(
-                        palabra_original[i - 1] + palabra_corregida[j - 1],
-                        1.0,
-                    )
+                    coste_reemplazar = max(1.0,self._distances.get(palabra_original[i - 1] + palabra_corregida[j - 1],1.0,))
+
 
                 mejor_coste = min(
                     matriz[i - 1, j] + coste_borrar,
