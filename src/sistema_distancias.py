@@ -8,7 +8,7 @@ class SistemaDistancias:
         self._words = {}
         self._distances = {}
         self._alphabet = "abcdefghijklmnñopqrstuvwxyzáéíóú"
-        self._replacement_scale = 4.0
+        self._replacement_scale = 2
 
     def fit(self, X_train: List[str]):
         self._create_words_freqs(X_train)
@@ -82,6 +82,12 @@ class SistemaDistancias:
                     ranking.append((word, distance, frequency))
 
             if len(ranking) > 0:
+                #prueba 1 :
+                #ranking.sort(key=lambda x: (x[1], -x[2], x[0])) ->76%
+                #prueba 2
+                #ranking.sort(key=lambda x: (round(x[1], 3), x[0])) ->75.9%
+                #prueba3
+                # ranking.sort(key=lambda x: (x[1], x[0])) ->75.9%
                 ranking.sort(key=lambda x: (x[1], -x[2], x[0]))
                 top_candidates = ranking[:max_correciones]
                 words = [word for word, _, _ in top_candidates]
@@ -151,6 +157,7 @@ class SistemaDistancias:
     
         coste_insertar = 1
         coste_borrar = 1
+        coste_transposicion = 0.5
         # coste_reemplazar = (Depende, abajo se pone)
 
         matriz = np.zeros((
@@ -166,15 +173,29 @@ class SistemaDistancias:
         for i in range(1, matriz.shape[0]):
             for j in range(1, matriz.shape[1]):
                 if palabra_original[i - 1] == palabra_corregida[j - 1]:
-                    matriz[i, j] = matriz[i - 1, j - 1]
+                    coste_reemplazar = 0.0
                 else:
                     coste_reemplazar = self._distances.get(
                         palabra_original[i - 1] + palabra_corregida[j - 1],
                         1.0,
                     )
-                    matriz[i, j] = min(
-                        matriz[i - 1, j] + coste_borrar,
-                        matriz[i, j - 1] + coste_insertar,
-                        matriz[i - 1, j - 1] + coste_reemplazar,
+
+                mejor_coste = min(
+                    matriz[i - 1, j] + coste_borrar,
+                    matriz[i, j - 1] + coste_insertar,
+                    matriz[i - 1, j - 1] + coste_reemplazar,
+                )
+
+                if (
+                    i > 1 and j > 1
+                    and palabra_original[i - 1] == palabra_corregida[j - 2]
+                    and palabra_original[i - 2] == palabra_corregida[j - 1]
+                ):
+                    mejor_coste = min(
+                        mejor_coste,
+                        matriz[i - 2, j - 2] + coste_transposicion,
                     )
+
+                matriz[i, j] = mejor_coste
+
         return float(matriz[-1, -1])
