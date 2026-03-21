@@ -7,7 +7,7 @@ class SistemaDistancias:
     def __init__(self):
         self._words = {}
         self._distances = {}
-        self._alphabet = "abcdefghijklmnñopqrstuvwxyzáéíóú"
+        self._alphabet = "abcdefghijklmnñopqrstuvwxyzáéíóúü"
         self._replacement_scale = 2
 
     def fit(self, X_train: List[str]):
@@ -25,8 +25,10 @@ class SistemaDistancias:
     def _create_distances(self):
         self._distances = {}
         matrix = self._position_matrix()
+
         keys = list(matrix.keys())
         values = list(matrix.values())
+        
         for i in range(len(keys)):
             for j in range(len(keys)):
                 string = keys[i] + keys[j]
