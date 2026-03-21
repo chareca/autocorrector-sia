@@ -96,15 +96,7 @@ class SistemaDistancias:
         return [palabra], [0.0]
 
     def _una_edicion(self, word: str, intercambiar: bool = False) -> set:
-        set1 = self._insert(word)
-        set2 = self._delete(word)
-        set3 = self._replace(word)
-
-        if not intercambiar:
-            return set1.union(set2, set3)
-
-        set4 = self._exchange(word)
-        return set1.union(set2, set3, set4)
+        return self._insert(word).union(self._delete(word), self._replace(word), self._exchange(word) if intercambiar else None)
 
     def _dos_ediciones(self, word: str, intercambiar: bool = False) -> set:
         palabras_ed1 = self._una_edicion(word, intercambiar)
