@@ -9,7 +9,7 @@ from sistema_contexto import SistemaContexto
 class Autocorrector:
     def __init__(self):
         self._sistema_distancias = SistemaDistancias()
-        self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=2)
+        self._sistema_contexto = SistemaContexto(min_appearance=10, size_ngram=2)
         self._vocabulario = None
         
 
