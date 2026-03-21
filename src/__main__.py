@@ -15,16 +15,16 @@ def cargar_train_test():
     )
     X_train = generador.get_corpus()
     X_test = [
-        ("Me gustan las rosquillas", "Me gustan las rosqullas"), # Error de borrado
+        ("me gusta ser el primero", "me gusa ser el primeo"), # Error de borrado
         ("Sabía que le gustaría", "Sbía que le gustaría"), # Error de borrado
         ("A mi hermano le gustan los helados", "A mi herrmano le gustan los helados"), # Error de inserción
-        ("Los ordenadores molan mucho", "Los ordenakdores molan mucho"), # Error de inserción
+        ("Los jugadores juegan mucho", "Los jugadrores juegan mucho"), # Error de inserción
         ("Odio hacer las frases de comprobación", "Odio hacer las frares de comprobación"), # Error de reemplazo (Poca distancia)
         ("Sin embargo, esta frase me gusta más", "Sin embargo, esta frase qe gusta más"), # Error de reemplazo (Mucha distancia)
         ("Ya queda menos para terminar", "Ya qeuda menos para terminar"), # Error de intercambio
         ("Espero que saquemos buena nota", "Espero que saquemos buean nota"), # Error de intercambio
         ("Algún día me iré de aquí", "Algún dia me iré de aquí"), # Las tildes
-        ("Ojalá me tocara la lotería", "Ojalá me tocara la loteria"), # Las tildes
+        ("Ojalá ganara el partido", "Ojala ganara el partido"), # Las tildes
         ("Tuvo un buen día", "Tubo un buen día"), # Error de contexto
         ("Voy a ver a mi amigo", "Voy a haber a mi amigo"), # Error de contexto
         ("Mi banco esta cerrado", "Mi banco esta serrado"), # Error de contexto
