@@ -48,11 +48,13 @@ def evaluar_autocorrector(nombre_autocorrector: str, autocorrector: Autocorrecto
         frase_corregida = autocorrector.corregir(frase_con_errores)
         original_norm = normalizar(frase_original)
         corregida_norm = normalizar(frase_corregida)
-        frases_ok += int(corregida_norm == original_norm)
+        acierto = corregida_norm == original_norm
+        frases_ok += int(acierto)
         
-        print("Frase original: ", frase_original)
-        print("Frase con errores: ", frase_con_errores)
+        print("Frase original: ", frase_original.lower())
+        print("Frase con errores: ", frase_con_errores.lower())
         print("Frase corregida: ", frase_corregida)
+        print("Resultado: ", "OK" if acierto else "FAIL")
         print("\n")
 
     print(f"Accuracy por frase: {frases_ok / len(X_test):.2%}")

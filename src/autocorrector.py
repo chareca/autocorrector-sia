@@ -49,6 +49,9 @@ class Autocorrector:
             frase_corregida = []
             frase_split = frase_lower.split()
             for palabra in frase_split:
+                if palabra in self._vocabulario:
+                    frase_corregida.append(palabra)
+                    continue
                 palabras_candidatas, distancias = self._sistema_distancias.predict(palabra=palabra, max_correciones=10, intercambiar=True)
                 frase_corregida.append(palabras_candidatas[0]) # Esta es la palabra más cercana y frecuente (esta ordenado de dicha forma)
         elif self._modo == "contexto":
