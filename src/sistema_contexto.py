@@ -1,13 +1,13 @@
-from typing import List
+from typing import List, Tuple
 
 class SistemaContexto:
-    def __init__(self, min_appearance: int=10, size_ngram: int=2):
-        if min_appearance <= 1:
-            raise ValueError("min_appearance > 1")
+    def __init__(self, min_apperance: int=10, size_ngram: int=2):
+        if min_apperance <= 1:
+            raise ValueError("min_apperance > 1")
         if size_ngram <= 1:
             raise ValueError("size_ngram > 1")
 
-        self._min_appearance = min_appearance
+        self._min_apperance = min_apperance
         self._size_ngram = size_ngram
 
         self._vocabulary = None
@@ -17,7 +17,7 @@ class SistemaContexto:
 
     def fit(self, X_train: List[str]):
         X_train_split = self._split_phrases(X_train)
-        X_train_split = self._add_unknown_words(X_train_split)
+        X_train_split = self._add_unknow_words(X_train_split)
         self._vocabulary = self._calc_vocabulary(X_train_split)
         matrix, rows, columns = self._calc_ngram_matrix(X_train_split)
 
@@ -32,7 +32,7 @@ class SistemaContexto:
             X_train_split.append(phrase_split)
         return X_train_split
     
-    def _add_unknown_words(self, X_train_split: List[List[str]]) -> List[List[str]]:
+    def _add_unknow_words(self, X_train_split: List[List[str]]) -> List[List[str]]:
         freqs_words = {}
         for phrase_split in X_train_split:
             for word in phrase_split:
@@ -41,12 +41,19 @@ class SistemaContexto:
                 else:
                     freqs_words[word] = 1
         
-        unknown_label = "<unk>"
+        unknow_label = "<unk>"
         for i, phrase_split in enumerate(X_train_split):
             for j, word in enumerate(phrase_split):
-                if freqs_words[word] < self._min_appearance:
-                    X_train_split[i][j] = unknown_label
+                if freqs_words[word] < self._min_apperance:
+                    X_train_split[i][j] = unknow_label
         return X_train_split
+    
+    def _calc_vocabulary(self, X_train_split: List[List[str]]) -> set:
+        vocabulary = set()
+        for phrase_split in X_train_split:
+            for word in phrase_split:
+                vocabulary.add(word)
+        return vocabulary
 
     def _calc_ngram_matrix(self, X_train_split: list[list[str]]):
         freqs_ngrams_n, freqs_ngrams_n_1 = self._ngram_freqs(X_train_split)
@@ -63,11 +70,11 @@ class SistemaContexto:
             ngram_split = ngram.split()
             ngram_n_1 = ' '.join(ngram_split[:-1])
 
-            if ngram_n_1 not in rows:
+            if not(ngram_n_1 in rows):
                 if ngram_n_1 != start_unk:
                     rows[ngram_n_1] = len(rows)
 
-        matrix = [[1 / len(self._vocabulary) for j in range(len(columns))] for i in range(len(rows))]
+        matrix = [[0 for j in range(len(columns))] for i in range(len(rows))]
         for ngram in ngrams:
             ngram_split = ngram.split()
             ngram_n_1 = ' '.join(ngram_split[:-1])
@@ -78,7 +85,7 @@ class SistemaContexto:
 
         return matrix, rows, columns
 
-    def _ngram_freqs(self, X_train_split: list[list[str]]) -> dict[str, int]:
+    def _ngram_freqs(self, X_train_split: list[list[str]]) -> Tuple[dict[str, int], dict[str, int]]:
         freqs_n = {}
         freqs_n_1 = {}
         n = self._size_ngram
@@ -96,38 +103,42 @@ class SistemaContexto:
                 else:
                     freqs_n_1[ngram_n_1] = 1
         return freqs_n, freqs_n_1
-    
-    def _calc_vocabulary(self, X_train_split: List[List[str]]) -> set:
-        vocabulary = set()
-        for phrase_split in X_train_split:
-            for word in phrase_split:
-                vocabulary.add(word)
-        return vocabulary
 
-    def predict(self, frase: List[str], pos_pal: int, palabras_posibles: List[str]) -> List[float]:
+    def predict(self, frase: List[str], pos_pal: int, num_sugerencias: int) -> Tuple[List[str], List[float]]:
         """ 
-            Se le da la frase, la posición de la palabra a corregir, y las
-            posibles palabras candidatas a ser la corrección de dicha palabra.
-            Devuelve la probabilidad de que aparezca cada palabra posible.
+            Se le da la frase y la posición de la palabra a corregir,
+            Devuelve las palabras más probables a poner en dicha posición junto con sus probabilidades
+            y todas ordenadas de menor a mayor.
         """
-        unknown_row = ' '.join(['<unk>' for j in range(self._size_ngram - 1)])
+
+        unknow_row = ' '.join(['<unk>' for j in range(self._size_ngram - 1)])
         copy_phrase = ['<s>' for j in range(self._size_ngram - 1)] + frase + ['</s>']
 
+        # Obtenemos el ngrama n - 1
+        new_pos_pal = pos_pal + (self._size_ngram - 1)
+        ngram_n_1 = copy_phrase[new_pos_pal - (self._size_ngram - 1):new_pos_pal]
+        for i, word in enumerate(ngram_n_1):
+            if not(word in self._vocabulary):
+                ngram_n_1[i] = "<unk>"
+        ngram_n_1 = " ".join(ngram_n_1)
+
+        if not(ngram_n_1 in self._rows_ngram_matrix) and unknow_row in self._rows_ngram_matrix:
+            ngram_n_1 = unknow_row
+
+        # Obtenemos las palabras más probables
+        words_sugeridas = []
+        sugerencias_prohibidas = set(["<s>", "</s>", "<unk>"])
+        row_ngram_matrix = self._ngram_matrix[self._rows_ngram_matrix[ngram_n_1]]
+        for end_word in self._columns_ngram_matrix:
+            if not(end_word in sugerencias_prohibidas):
+                prob = row_ngram_matrix[self._columns_ngram_matrix[end_word]]
+                words_sugeridas.append((end_word, prob))
+        words_sugeridas = sorted(words_sugeridas, key=lambda x: -x[1])
+        words_sugeridas = words_sugeridas[:num_sugerencias]
+
+        words = []
         probs = []
-        for candidate_word in palabras_posibles:
-            new_pos_pal = pos_pal + (self._size_ngram - 1)
-            ngram_n_1 = copy_phrase[new_pos_pal - (self._size_ngram - 1):new_pos_pal]
-            for i, word in enumerate(ngram_n_1):
-                if not(word in self._vocabulary):
-                    ngram_n_1[i] = "<unk>"
-            ngram_n_1 = " ".join(ngram_n_1)
-
-            prob = 1 / len(self._vocabulary)
-            if not(ngram_n_1 in self._rows_ngram_matrix) and candidate_word in self._columns_ngram_matrix:
-                if unknown_row in self._rows_ngram_matrix:
-                    prob = self._ngram_matrix[self._rows_ngram_matrix[unknown_row]][self._columns_ngram_matrix[candidate_word]]
-            elif ngram_n_1 in self._rows_ngram_matrix and candidate_word in self._columns_ngram_matrix:
-                prob = self._ngram_matrix[self._rows_ngram_matrix[ngram_n_1]][self._columns_ngram_matrix[candidate_word]]
+        for word, prob in words_sugeridas:
+            words.append(word)
             probs.append(prob)
-
-        return probs
+        return words, probs
