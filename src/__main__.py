@@ -1,3 +1,4 @@
+import re
 from typing import List, Tuple
 
 from generador_muestras import GeneradorMuestras
@@ -5,7 +6,7 @@ from autocorrector import Autocorrector
 
 # Configuración
 ratio_error = 0.5
-ruta_directorio_libros = "autocorrector-sia/libros"
+ruta_directorio_libros = "./libros"
 
 def cargar_train_test():
     generador = GeneradorMuestras(
@@ -40,13 +41,22 @@ def evaluar_autocorrector(nombre_autocorrector: str, autocorrector: Autocorrecto
     print(f"     Evaluación ({nombre_autocorrector})")
     print("=================================================\n")
 
+    normalizar = lambda s: re.sub(r"[^\w\s]", "", s.lower().translate(str.maketrans("áéíóúü", "aeiouu"))).strip()
+    frases_ok = 0
+
     for frase_original, frase_con_errores in X_test:
         frase_corregida = autocorrector.corregir(frase_con_errores)
+        original_norm = normalizar(frase_original)
+        corregida_norm = normalizar(frase_corregida)
+        frases_ok += int(corregida_norm == original_norm)
         
         print("Frase original: ", frase_original)
         print("Frase con errores: ", frase_con_errores)
         print("Frase corregida: ", frase_corregida)
         print("\n")
+
+    print(f"Accuracy por frase: {frases_ok / len(X_test):.2%}")
+    print()
 
 if __name__ == '__main__':
     X_train, X_test = cargar_train_test()
