@@ -46,6 +46,7 @@ class SistemaDistancias:
         dic["í"] = dic["i"]
         dic["ó"] = dic["o"]
         dic["ú"] = dic["u"]
+        dic["ü"] = dic["u"]
         
         return dic
 
