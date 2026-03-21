@@ -4,7 +4,7 @@ import numpy as np
 
 
 class SistemaDistancias:
-    def __init__(self, a: float = 2.0, min_freq: int = 3, top_k: int = 10, intercambiar: bool = True, costo_intercambio: float = 0.5):
+    def __init__(self, a: float = 2.0, min_freq: int = 3, top_k: int = 10, intercambiar: bool = True, costo_intercambio: float = 0.1):
         if a <= 0:
             raise ValueError("a debe ser > 0")
         if min_freq < 1:
@@ -157,7 +157,7 @@ class SistemaDistancias:
         distancia = self._distancia_euclidea_2d(pos_origen, pos_destino)
         return distancia / a
 
-    def _distancia_levenshtein_ponderada(self,origen: str,destino: str,a: float = 2.0,costo_intercambio: float = 0.5) -> float:
+    def _distancia_levenshtein_ponderada(self,origen: str,destino: str,a: float = 2.0,costo_intercambio: float = 0.1) -> float:
         filas, columnas = len(origen) + 1, len(destino) + 1
 
         matriz = np.zeros(shape=(filas, columnas), dtype=np.float32)

@@ -26,11 +26,13 @@ class Autocorrector:
             self._sistema_distancias = SistemaDistancias()
             self._sistema_distancias.fit(X_train)
         elif self._modo == "contexto":
-            self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=self._numero_ngramas)
+            self._sistema_distancias = SistemaDistancias()
+            self._sistema_contexto = SistemaContexto(min_apperance=3, size_ngram=self._numero_ngramas)
+            self._sistema_distancias.fit(X_train)
             self._sistema_contexto.fit(X_train)
         elif self._modo == "ambos":
             self._sistema_distancias = SistemaDistancias()
-            self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=self._numero_ngramas)
+            self._sistema_contexto = SistemaContexto(min_apperance=3, size_ngram=self._numero_ngramas)
             self._sistema_distancias.fit(X_train)
             self._sistema_contexto.fit(X_train)
         
@@ -44,7 +46,7 @@ class Autocorrector:
 
     def corregir(self, frase: str) -> str:
         """ Corrige la frase que recibe """
-        frase_lower = frase.lower()
+        frase_lower = " ".join(re.sub(r"[^a-záéíóúñ\s]", " ", frase.lower()).split())
         if self._modo == "distancias":
             frase_corregida = []
             frase_split = frase_lower.split()
@@ -58,8 +60,16 @@ class Autocorrector:
             frase_corregida = []
             frase_split = frase_lower.split()
             for pos_pal, pal in enumerate(frase_split):
-                palabras_candidatas, probabilidades = self._sistema_contexto.predict(frase_split, pos_pal, num_sugerencias=10)
-                frase_corregida.append(palabras_candidatas[0]) # Esta es la palabra más probable por el contexto (esta ordenado de dicha forma)
+                palabras_distancia, _ = self._sistema_distancias.predict(palabra=pal, max_correciones=30, intercambiar=True)
+                palabras_distancia = set(palabras_distancia)
+                palabras_candidatas, probabilidades = self._sistema_contexto.predict(frase_split, pos_pal, num_sugerencias=50)
+                palabra_corregida = pal
+                mejor_prob = -1.0
+                for palabra_candidata, prob in zip(palabras_candidatas, probabilidades):
+                    if palabra_candidata in palabras_distancia and prob > mejor_prob:
+                        palabra_corregida = palabra_candidata
+                        mejor_prob = prob
+                frase_corregida.append(palabra_corregida)
         elif self._modo == "ambos":
             frase_corregida = []
             frase_split = frase_lower.split()

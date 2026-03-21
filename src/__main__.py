@@ -1,4 +1,3 @@
-import re
 from typing import List, Tuple
 
 from generador_muestras import GeneradorMuestras
@@ -41,7 +40,7 @@ def evaluar_autocorrector(nombre_autocorrector: str, autocorrector: Autocorrecto
     print(f"     Evaluación ({nombre_autocorrector})")
     print("=================================================\n")
 
-    normalizar = lambda s: re.sub(r"[^\w\s]", "", s.lower().translate(str.maketrans("áéíóúü", "aeiouu"))).strip()
+    normalizar = lambda s: s.lower().translate(str.maketrans("áéíóúü", "aeiouu"))
     frases_ok = 0
 
     for frase_original, frase_con_errores in X_test:
