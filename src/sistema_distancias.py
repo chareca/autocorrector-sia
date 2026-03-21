@@ -1,11 +1,10 @@
 import re
 from typing import List, Tuple
-
 import numpy as np
 
 
 class SistemaDistancias:
-    def __init__(self,a: float = 2.0,min_freq: int = 3,top_k: int = 10,intercambiar: bool = True,costo_intercambio: float = 0.5,):
+    def __init__(self, a: float = 2.0, min_freq: int = 3, top_k: int = 10, intercambiar: bool = True, costo_intercambio: float = 0.5):
         if a <= 0:
             raise ValueError("a debe ser > 0")
         if min_freq < 1:
@@ -34,7 +33,6 @@ class SistemaDistancias:
                 self._words[word] = self._words.get(word, 0) + 1
 
     def predict(self, palabra: str, max_correciones: int | None = None, intercambiar: bool | None = None, a: float | None = None, min_freq: int | None = None) -> Tuple[List[str], List[float]]:
-
         palabra = self._normalizar_palabra(palabra)
         if not palabra:
             return [], []
@@ -72,7 +70,7 @@ class SistemaDistancias:
 
     def _normalizar_frase(self, frase: str) -> str:
         frase = self._normalizar_tildes(frase.lower())
-        return re.sub(r"[^\w\s]", "", frase)
+        return re.sub(r"[^a-zñ\s]", "", frase)
 
     def _normalizar_palabra(self, palabra: str) -> str:
         palabra = self._normalizar_tildes(palabra.lower())
