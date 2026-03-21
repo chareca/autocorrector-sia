@@ -63,7 +63,7 @@ class SistemaContexto:
             ngram_split = ngram.split()
             ngram_n_1 = ' '.join(ngram_split[:-1])
 
-            if not(ngram_n_1 in rows):
+            if ngram_n_1 not in rows:
                 if ngram_n_1 != start_unk:
                     rows[ngram_n_1] = len(rows)
 

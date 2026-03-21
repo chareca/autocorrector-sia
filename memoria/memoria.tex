@@ -23,7 +23,7 @@
     showstringspaces=false
 }
 
-\title{Optimización de un autocorrector - Memoria Técnica}
+\title{Optimización de un Autocorrector \\ Memoria Técnica}
 \author{Eloy Urriens - Juan Pulgarín - Tomas Alignani - Nicolás Chareca}
 \date{22 de marzo de 2026}
 
@@ -49,11 +49,11 @@ La implementación base, desarrollada para la práctica, utiliza un corpus de en
 El propósito de este trabajo la implementación de una serie de mejoras para este corrector que lo transformen a un modelo más sofisticado. Para ello, planteamos las siguientes mejoras:
 
 \begin{itemize}
-    \item \textbf{Modelo de lenguaje basado en n-gramas:} Evolucionar el modelo de unigramas hacia bigramas o trigramas para capturar información contextual y mejorar la precisión de las sugerencias.  permitirá corregir errores donde la palabra escrita existe en el diccionario pero no tiene sentido en la oración.
-    \item \textbf{Distancia de edición ponderada por teclado:} Modificar la penalización de las ediciones para considerar la cercanía física de las teclas en un teclado QWERTY.
+    \item \textbf{\underline{Contexto} / n-gramas:} Evolucionar el modelo de unigramas hacia bigramas o trigramas para capturar información contextual y mejorar la precisión de las sugerencias.  permitirá corregir errores donde la palabra escrita existe en el diccionario pero no tiene sentido en la oración.
+    \item \textbf{\underline{Distancia} de edición ponderada por teclado:} Modificar la penalización de las ediciones para considerar la cercanía física de las teclas en un teclado QWERTY.
 \end{itemize}
 
-Para evaluar el impacto de cada mejora, definimos conjuntos de datos de validación y test independientes para los distintos modelos formados por los métodos mencionados, permitiéndonos experimentar con los hiperparámetros del mismo (ej: n de los ngramas) y así obtener datos reales del funcionamiento de estos modelos con distintas configuraciones, para lograr un mejor entendimiento de los mismos.
+Para evaluar el impacto de cada mejora, definimos conjuntos de datos de validación y test generales para usarse por los métodos mencionados, permitiéndonos experimentar con los hiperparámetros del mismo (ej: n de los ngramas) y así obtener datos reales del funcionamiento de estos modelos con distintas configuraciones, para lograr un mejor entendimiento de los mismos.
 
 \section{Análisis del Sistema Actual}
 \subsection{Funcionamiento Base}
@@ -116,7 +116,7 @@ Luego por último, implementamos una función recursiva encargada de obtener los
 
 \clearpage
 
-\section{Propuesta de Mejora}
+\section{Propuestas de Mejora}
 \subsection{Algoritmos Implementados}
 
 
