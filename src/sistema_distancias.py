@@ -33,7 +33,7 @@ class SistemaDistancias:
             for word in linea.split():
                 self._words[word] = self._words.get(word, 0) + 1
 
-    def predict(self,palabra: str,max_correciones: int | None = None,intercambiar: bool | None = None,a: float | None = None,min_freq: int | None = None,) -> Tuple[List[str], List[float]]:
+    def predict(self, palabra: str, max_correciones: int | None = None, intercambiar: bool | None = None, a: float | None = None, min_freq: int | None = None) -> Tuple[List[str], List[float]]:
 
         palabra = self._normalizar_palabra(palabra)
         if not palabra:
@@ -41,17 +41,20 @@ class SistemaDistancias:
 
         if max_correciones is None:
             max_correciones = self._top_k
+
         if max_correciones <= 0:
             return [], []
 
         if intercambiar is None:
             intercambiar = self._intercambiar
+
         if a is None:
             a = self._a
+        
         if min_freq is None:
             min_freq = self._min_freq
 
-        ranking = self._sugerencias(palabra,top_k=max_correciones,intercambiar=intercambiar,a=a,min_freq=min_freq,)
+        ranking = self._sugerencias(palabra,top_k=max_correciones,intercambiar=intercambiar,a=a,min_freq=min_freq)
 
         palabras = [word for word, _, _ in ranking]
         distancias = [distancia for _, distancia, _ in ranking]
@@ -106,13 +109,7 @@ class SistemaDistancias:
         return words_created
 
     def _una_edicion(self, word: str, intercambiar: bool = False) -> set[str]:
-        set1 = self._insert(word)
-        set2 = self._delete(word)
-        set3 = self._replace(word)
-        if not intercambiar:
-            return set1.union(set2, set3)
-        set4 = self._exchange(word)
-        return set1.union(set2, set3, set4)
+        return self._insert(word).union(self._delete(word), self._replace(word), self._exchange(word) if intercambiar else set())
 
     def _dos_ediciones(self, word: str, intercambiar: bool = False) -> set[str]:
         palabras_ed1 = self._una_edicion(word, intercambiar)
@@ -155,6 +152,7 @@ class SistemaDistancias:
 
         pos_origen = self._teclado_pos.get(letra_origen)
         pos_destino = self._teclado_pos.get(letra_destino)
+
         if pos_origen is None or pos_destino is None:
             return 1.0
 
@@ -164,17 +162,10 @@ class SistemaDistancias:
     def _distancia_levenshtein_ponderada(self,origen: str,destino: str,a: float = 2.0,costo_intercambio: float = 0.5) -> float:
         filas, columnas = len(origen) + 1, len(destino) + 1
 
-        matriz = []
-        for i in range(filas):
-            fila = []
-            for j in range(columnas):
-                fila.append(0.0)
-            matriz.append(fila)
+        matriz = np.zeros(shape=(filas, columnas), dtype=np.float32)
 
-        for i in range(filas):
-            matriz[i][0] = float(i)
-        for j in range(columnas):
-            matriz[0][j] = float(j)
+        matriz[:, 0] = np.arange(filas).ravel()
+        matriz[0, :] = np.arange(columnas).ravel()
 
         for i in range(1, filas):
             for j in range(1, columnas):
@@ -189,18 +180,15 @@ class SistemaDistancias:
 
         return matriz[filas - 1][columnas - 1]
 
-    def _sugerencias(self,word: str,top_k: int = 10,intercambiar: bool = True,a: float = 2.0,min_freq: int = 3,):
-
+    def _sugerencias(self, word: str,top_k: int = 10, intercambiar: bool = True, a: float = 2.0, min_freq: int = 3):
         word = self._normalizar_palabra(word)
         cands = self._candidatos(word, intercambiar, min_freq=min_freq)
 
         ranking = []
         for cand in cands:
             dist = self._distancia_levenshtein_ponderada(
-                word,
-                cand,
-                a=a,
-                costo_intercambio=self._costo_intercambio,
+                word, cand,
+                a=a, costo_intercambio=self._costo_intercambio,
             )
             freq = self._words.get(cand, 0)
             ranking.append((cand, dist, freq))
