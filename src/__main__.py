@@ -5,7 +5,7 @@ from autocorrector import Autocorrector
 
 # Configuración
 ratio_error = 0.5
-ruta_directorio_libros = "./libros"
+ruta_directorio_libros = "autocorrector-sia/libros"
 
 def cargar_train_test():
     generador = GeneradorMuestras(

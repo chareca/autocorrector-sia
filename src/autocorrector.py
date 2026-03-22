@@ -27,22 +27,25 @@ class Autocorrector:
             self._sistema_distancias.fit(X_train)
         elif self._modo == "contexto":
             self._sistema_distancias = SistemaDistancias()
-            self._sistema_contexto = SistemaContexto(min_apperance=3, size_ngram=self._numero_ngramas)
+            self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=self._numero_ngramas)
             self._sistema_distancias.fit(X_train)
             self._sistema_contexto.fit(X_train)
         elif self._modo == "ambos":
             self._sistema_distancias = SistemaDistancias()
-            self._sistema_contexto = SistemaContexto(min_apperance=3, size_ngram=self._numero_ngramas)
+            self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=self._numero_ngramas)
             self._sistema_distancias.fit(X_train)
             self._sistema_contexto.fit(X_train)
         
         self._calc_vocabulary(X_train)
 
     def _calc_vocabulary(self, X_train: List[str]):
-        self._vocabulario = set()
+        self._vocabulario = {}
         for frase in X_train:
             for pal in frase.split():
-                self._vocabulario.add(pal)
+                if not(pal in self._vocabulario):
+                    self._vocabulario[pal] = 1
+                else:
+                    self._vocabulario[pal] += 1
 
     def corregir(self, frase: str) -> str:
         """ Corrige la frase que recibe """
@@ -54,52 +57,65 @@ class Autocorrector:
                 if palabra in self._vocabulario:
                     frase_corregida.append(palabra)
                     continue
+
                 palabras_candidatas, distancias = self._sistema_distancias.predict(palabra=palabra, max_correciones=10, intercambiar=True)
                 frase_corregida.append(palabras_candidatas[0]) # Esta es la palabra más cercana y frecuente (esta ordenado de dicha forma)
         elif self._modo == "contexto":
             frase_corregida = []
             frase_split = frase_lower.split()
             for pos_pal, pal in enumerate(frase_split):
-                palabras_distancia, _ = self._sistema_distancias.predict(palabra=pal, max_correciones=30, intercambiar=True)
-                palabras_distancia = set(palabras_distancia)
-                palabras_candidatas, probabilidades = self._sistema_contexto.predict(frase_split, pos_pal, num_sugerencias=50)
-                palabra_corregida = pal
-                mejor_prob = -1.0
-                for palabra_candidata, prob in zip(palabras_candidatas, probabilidades):
-                    if palabra_candidata in palabras_distancia and prob > mejor_prob:
-                        palabra_corregida = palabra_candidata
-                        mejor_prob = prob
-                frase_corregida.append(palabra_corregida)
+                if pal in self._vocabulario:
+                    frase_corregida.append(pal)
+                    continue
+
+                palabras_distancia, _ = self._sistema_distancias.predict(palabra=pal, max_correciones=10, intercambiar=True)
+                palabras_contexto, probabilidades = self._sistema_contexto.predict(frase_split, pos_pal, num_sugerencias=300_000) # 300_000 para que nos sugiera todas las que pueda
+
+                palabras_elegidas = []
+                for palabra_distancia in palabras_distancia:
+                    for i, palabra_contexto in enumerate(palabras_contexto):
+                        if palabra_distancia == palabra_contexto:
+                            palabras_elegidas.append((palabra_distancia, probabilidades[i]))
+                            break
+                palabras_elegidas = sorted(palabras_elegidas, key=lambda x: -x[1])
+
+                if len(palabras_elegidas) == 0:
+                    frase_corregida.append(pal)
+                else:
+                    frase_corregida.append(palabras_elegidas[0][0])
         elif self._modo == "ambos":
             frase_corregida = []
             frase_split = frase_lower.split()
-            for pos_pal, palabra in enumerate(frase_split):
-                palabras_candidatas, probabilidades = self._sistema_contexto.predict(frase_split, pos_pal, num_sugerencias=30)
+            for pos_pal, pal in enumerate(frase_split):
+                if pal in self._vocabulario:
+                    frase_corregida.append(pal)
+                    continue
+
+                palabras_distancia, distancias = self._sistema_distancias.predict(palabra=pal, max_correciones=10, intercambiar=True)
+                palabras_contexto, probabilidades = self._sistema_contexto.predict(frase_split, pos_pal, num_sugerencias=300_000) # 300_000 para que nos sugiera todas las que pueda
+
+                distancias = np.array(distancias)
+                probabilidades = np.array(probabilidades)
+                distancias = (distancias - np.min(distancias)) / (np.max(distancias) - np.min(distancias))
+                probabilidades = (probabilidades - np.min(probabilidades)) / (np.max(probabilidades) - np.min(probabilidades))
+
+                palabras_elegidas = []
+                for i, palabra_distancia in enumerate(palabras_distancia):
+                    for j, palabra_contexto in enumerate(palabras_contexto):
+                        if palabra_distancia == palabra_contexto:
+                            palabras_elegidas.append((palabra_distancia, distancias[i], probabilidades[j]))
+                            break
                 
-                distancias = []
-                for palabra_candidata in palabras_candidatas:
-                    distancia = self._sistema_distancias._distancia_levenshtein_ponderada(palabra, palabra_candidata)
-                    distancias.append(distancia)
-
-                palabras_filtradas = []
-                probabilidades_filtradas = []
-                distancias_filtradas = []
-                for palabra_candidata, prob, dist in zip(palabras_candidatas, probabilidades, distancias):
-                    if dist <= 2:
-                        palabras_filtradas.append(palabra_candidata)
-                        probabilidades_filtradas.append(prob)
-                        distancias_filtradas.append(dist)
-                palabras_candidatas = palabras_filtradas
-                probabilidades = probabilidades_filtradas
-                distancias = distancias_filtradas
-
-                if len(palabras_candidatas) == 0:
-                    frase_corregida.append(palabra)
+                if len(palabras_elegidas) == 0:
+                    frase_corregida.append(pal)
                 else:
-                    probs_array = np.array(probabilidades)
-                    mejor_pos = np.argmax(probs_array)
-                    palabra_corregida = palabras_candidatas[mejor_pos]
-                    frase_corregida.append(palabra_corregida)
+                    puntuaciones = []
+                    for i in range(len(palabras_elegidas)):
+                        puntuacion_distancia = 1 - palabras_elegidas[i][1]
+                        puntuacion_contexto = palabras_elegidas[i][2]
+                        puntuaciones.append((palabras_elegidas[i][0], (puntuacion_distancia + puntuacion_contexto) / 2))
+                    puntuaciones = sorted(puntuaciones, key=lambda x: -x[1])
+                    frase_corregida.append(puntuaciones[0][0])
 
         frase_corregida = " ".join(frase_corregida)
         return frase_corregida
