@@ -157,16 +157,56 @@ Realizamos una validación cruzada de los siguientes valores para cada hiperpar�
 \begin{itemize}
     \item \textbf{min\_appearances}: $[1;5]$ (step=1)
     \item \textbf{a}: $[1, 1.5, 2, 3, 4]$
-    \item \textbf{costo\_intercambio}: $[0.1, 0.2, 0.25, 0.5, 1]$
+    \item \textbf{costo\_intercambio}: $[0.1, 0.2, 0.25, 0.5, 1]$ // Costo de la operación de intercambio.
 \end{itemize}
 
  \subsection{Estructura del Código}
 \begin{lstlisting}
-# Poner codigo
-\end{lstlisting}
+class SistemaContexto:
+    def __init__(self, min_apperance: int = 10, size_ngram: int = 2):
+        if min_apperance <= 1:
+            raise ValueError("min_apperance > 1")
+        if size_ngram <= 1:
+            raise ValueError("size_ngram > 1")
+
+        # Hiperparámetros del modelo
+        self._min_apperance = min_apperance
+        self._size_ngram = size_ngram
+        
+        self._vocabulary = None # Diccionario de palabras del corpus con sus frecuencias
+        self._ngram_matrix = None # Matriz de n-gramas con sus frecuencias
+        self._rows_ngram_matrix = None # Lista de n-1-gramas (contextos) presentes en la matriz de n-gramas
+        self._columns_ngram_matrix = None # Lista de palabras presentes en la matriz de n-gramas
+\end{lstlisting}{Clase de autocorrector base + contexto}
+
+\clearpage
+
+\begin{lstlisting}
+class SistemaDistancias:
+    def __init__(self, a: float = 2.0, min_freq: int = 3, top_k: int = 10, intercambiar: bool = True, costo_intercambio: float = 0.1, usar_cercania_teclado: bool = True):
+        if a <= 0:
+            raise ValueError("a debe ser > 0")
+        if min_freq < 1:
+            raise ValueError("min_freq debe ser >= 1")
+        if top_k < 1:
+            raise ValueError("top_k debe ser >= 1")
+        if costo_intercambio < 0:
+            raise ValueError("costo_intercambio debe ser >= 0")
+
+        # Hiperparametros del modelo
+        self._a = a
+        self._min_freq = min_freq
+        self._top_k = top_k
+        self._intercambiar = intercambiar
+        self._costo_intercambio = costo_intercambio
+        self._usar_cercania_teclado = usar_cercania_teclado
+
+        self._alphabet = "abcdefghijklmnñopqrstuvwxyz"
+        self._words = {} # Diccionario de palabras del corpus con sus frecuencias
+        self._teclado_pos = self._mapa_teclado_es() # Diccionario con la posición de cada letra en el teclado QWERTY
+\end{lstlisting}{Clase de autocorrector base + distancias}
 
 \section{Resultados}
-Presentar métricas de desempeño y comparativas.
 
 \subsection{Resultados por método}
 \subsubsection{Contexto / n-gramas}
@@ -190,12 +230,50 @@ Aún contando con un corpus mayor, los bigramas no aportan suficiente informaci�
 
 \subsubsection{Distancia física de teclado}
 
-\subsubsection{Combinacion (Contexto + Distancia)}
+\paragraph{Resultados de la validación realizada.}
+Al probar las 125 combinaciones de hiperparámetros, encontramos que el mejor resultado se obtiene con \textbf{min\_appearances} igual a 3, \textbf{a} igual a 2 y \textbf{costo\_intercambio} igual a 0.1, alcanzando un \texttt{accuracy\_score} de 95\%.
 
-\subsection{Tabla comparativa}
+Esto señala que el modelo, para el conjunto de validación que utilizamos, se beneficia significativamente de considerar la distancia física de las teclas. Comparando su accuracy con el modelo base, se observa una mejora del 35\%, lo que significa que funciona bien para corregir los errores de tipeo que involucran problemas de teclas adyacentes en el conjunto de validación.
 
+\subsection{Tabla comparativa (test)}
 
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Accuracy} & \textbf{Observaciones} \\
+\hline
+Distancias & 50.0\% & Modelo considerando distancias fisicas. \\
+\hline
+Contexto / n-gramas & 55.6\% & Modelo considerando contexto. \\
+\hline
+Ambos (Contexto + Distancia) & 61.1\% & Mejora \% al combinarlos. \\
+\hline
+\end{tabular}
+\end{center}
 \section{Conclusiones}
-Resumen de mejoras logradas y trabajo futuro.
+
+En este trabajo partimos de un autocorrector base centrado en frecuencia 
+de unigramas y distancia de Levenshtein, y evaluamos dos mejoras principales: 
+el uso de contexto mediante n-gramas y el ajuste del coste de edición según 
+la cercanía física de teclas en teclado QWERTY.
+
+Los resultados muestran que ambas propuestas aportan mejoras, aunque con 
+comportamientos distintos. La mejora de contexto incrementa la capacidad 
+del sistema para seleccionar palabras más coherentes con el entorno local, 
+pero su rendimiento está limitado por la calidad y tamaño del corpus y por la poca 
+información que aportan algunos bigramas frecuentes. En cambio, la mejora 
+basada en distancias físicas de teclado mostró un efecto más fuerte en 
+validación, al modelar de forma más realista los errores de tipeo más comunes.
+
+En la evaluación sobre test, la combinación de ambas estrategias obtuvo el 
+mejor rendimiento global, superando a los modelos individuales. Esto 
+confirma que contexto y distancia no son excluyentes, sino que obtienen resultados 
+complementarios. Mientras el contexto ayuda a decidir qué palabra encaja 
+mejor la distancia ponderada ayuda a decidir qué corrección tiene más sentido 
+en base al error cometido.
+
+Como conclusión general, consideramos que el objetivo del trabajo se 
+cumplió: se logró transformar el corrector inicial en un sistema más 
+robusto y preciso, manteniendo un diseño modular que facilita extenderlo. 
 
 \end{document}

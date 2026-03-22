@@ -8,8 +8,8 @@ from sistema_contexto import SistemaContexto
 
 class Autocorrector:
     def __init__(self, modo: str=Literal["distancias", "contexto", "ambos"], numero_ngramas: int=None, min_apperance: int=None):
-        if not(modo in ["distancias", "contexto", "ambos"]):
-            raise ValueError("Requisito: El modo solo puede ser \"distancias\", \"contexto\" o \"ambos\"")
+        if modo not in ["distancias", "contexto", "ambos", "base"]:
+            raise ValueError("Requisito: El modo solo puede ser \"distancias\", \"contexto\", \"ambos\" o \"base\"")
         if (modo == "contexto" or modo == "ambos") and (numero_ngramas == None or min_apperance == None):
             raise ValueError("Requisito: Se debe especificar el número de ngramas")
 
@@ -23,6 +23,9 @@ class Autocorrector:
 
     def fit(self, X_train: List[str]) -> None:
         """ Se entrena con una lista de frases """
+        if self._modo == 'base': # El distancias con usar_cercania_teclado en false es equivalente al modelo base
+            self._sistema_distancias = SistemaDistancias(usar_cercania_teclado=False)
+            self._sistema_distancias.fit(X_train)
         if self._modo == "distancias":
             self._sistema_distancias = SistemaDistancias()
             self._sistema_distancias.fit(X_train)
@@ -43,7 +46,7 @@ class Autocorrector:
         self._vocabulario = {}
         for frase in X_train:
             for pal in frase.split():
-                if not(pal in self._vocabulario):
+                if pal not in self._vocabulario:
                     self._vocabulario[pal] = 1
                 else:
                     self._vocabulario[pal] += 1
@@ -51,6 +54,16 @@ class Autocorrector:
     def corregir(self, frase: str) -> str:
         """ Corrige la frase que recibe """
         frase_lower = " ".join(re.sub(r"[^a-záéíóúñ\s]", " ", frase.lower()).split())
+        if self._modo == "base":
+            frase_corregida = []
+            frase_split = frase_lower.split()
+            for palabra in frase_split:
+                if palabra in self._vocabulario:
+                    frase_corregida.append(palabra)
+                    continue
+
+                palabras_candidatas, distancias = self._sistema_distancias.predict(palabra=palabra, max_correciones=10, intercambiar=True)
+                frase_corregida.append(palabras_candidatas[0]) # Esta es la palabra más cercana y frecuente (esta ordenado de dicha forma)
         if self._modo == "distancias":
             frase_corregida = []
             frase_split = frase_lower.split()
