@@ -46,10 +46,10 @@ Este proyecto de la asignatura 'Sistemas Inteligentes. Aplicaciones' tiene como 
 
 La implementación base, desarrollada para la práctica, utiliza un corpus de entrenamiento compuesto por 21 libros de Pío Baroja para calcular las probabilidades de aparición de cada palabra. Sin embargo, este modelo presenta limitaciones como la falta de sensibilidad al contexto y la incapacidad de detectar errores en los que la palabra escrita existe en el diccionario pero es incorrecta en su entorno (ej: la gran 'automóvil').
 
-El propósito de este trabajo la implementación de una serie de mejoras para este corrector que lo transformen a un modelo más sofisticado. Para ello, planteamos las siguientes mejoras:
+El propósito de este trabajo es la implementación de una serie de mejoras para este corrector que lo transformen a un modelo más sofisticado. Para ello, planteamos las siguientes mejoras:
 
 \begin{itemize}
-    \item \textbf{\underline{Contexto} / n-gramas:} Evolucionar el modelo de unigramas hacia bigramas o trigramas para capturar información contextual y mejorar la precisión de las sugerencias.  permitirá corregir errores donde la palabra escrita existe en el diccionario pero no tiene sentido en la oración.
+    \item \textbf{\underline{Contexto} / n-gramas:} Evolucionar el modelo de unigramas hacia bigramas o trigramas para capturar información contextual y mejorar la precisión de las sugerencias. Permitirá corregir errores donde la palabra escrita existe en el diccionario pero no tiene sentido en la oración.
     \item \textbf{\underline{Distancia} de edición ponderada por teclado:} Modificar la penalización de las ediciones para considerar la cercanía física de las teclas en un teclado QWERTY.
 \end{itemize}
 
@@ -129,8 +129,8 @@ El algoritmo que implementamos sigue los siguientes pasos:
 \begin{enumerate}
     \item Llega una frase a corregir
     \item Para cada palabra de la frase
-        \subitem Si esta en el vocabulario --> La dejamos como esta
-        \subitem Si no está en el vocabulario --> Obtenemos todas las palabras cercanas y frecuentes junto con sus probabilidades de contexto (probabilidades que indican como de bien encajan esas palabras allí) y luego se elige la de mayor probabilidad.
+        \subitem Si esta en el vocabulario \rightarrow \ La dejamos como esta
+        \subitem Si no está en el vocabulario \rightarrow \ Obtenemos todas las palabras cercanas y frecuentes junto con sus probabilidades de contexto (probabilidades que indican como de bien encajan esas palabras allí) y luego se elige la de mayor probabilidad.
     \item Devolvemos la frase corregida
 \end{enumerate}
 
@@ -146,9 +146,9 @@ Para validar los hiperparámetros, definimos un conjunto de validación específ
 \paragraph{Introducción.}
 En esta mejora del modelo, proponemos modificar la penalización de las ediciones para considerar la cercanía física de las teclas en un teclado QWERTY. La idea es que los errores de tipeo más comunes suelen involucrar teclas adyacentes, por lo que asignar un coste menor a estas ediciones puede mejorar la precisión del autocorrector.
 \paragraph{Implementación.}
-Para cumplir este objetivo, utilizamos un diccionario que asigna a cada letra su posición en el teclado QWERTY. Luego, calcular la distancia euclídea de edición entre dos palabras, se modifica el coste de la operación de reemplazo/sustitución según la proximidad de las teclas involucradas. Por ejemplo, si la letra 'a' se sustituye por 's', que es una tecla adyacente, el coste de esta operación será menor que si se sustituyera por 'p', que está más alejada.
+Para cumplir este objetivo, utilizamos un diccionario que asigna a cada letra su posición en el teclado QWERTY. Luego, al calcular la distancia euclídea de edición entre dos palabras, se modifica el coste de la operación de reemplazo/sustitución según la proximidad de las teclas involucradas. Por ejemplo, si la letra 'a' se sustituye por 's', que es una tecla adyacente, el coste de esta operación será menor que si se sustituyera por 'p', que está más alejada.
 
-El algoritmo final para la distancia de la frase corregida a la original se mantiene igual, usando la distancia de Levenshtein, pero con los costes de edición ajustados según la proximidad de las teclas. Esto se implementa modificando la función que calcula el coste de cada operación de edición para incorporar la distancia física entre las teclas.
+El algoritmo final para medir la distancia entre la frase corregida y la original pasa a ser la variante Damerau-Levenshtein, basada en Levenshtein, pero con los costes de edición ajustados según la proximidad de las teclas. Esto se implementa modificando la función que calcula el coste de cada operación de edición para incorporar la distancia física entre las teclas.
 \paragraph{Hiperparámetros.}
 Incorporamos un hiperparámetro adicional, \textbf{a}, que controla la importancia de la distancia física en el coste total de edición. Un valor de \textbf{a} igual a 1 indica que la distancia física tiene influencia máxima, mientras que con valores más altos, le da un peso menor a esta consideración.
 
@@ -250,6 +250,9 @@ Ambos (Contexto + Distancia) & 61.1\% & Mejora \% al combinarlos. \\
 \hline
 \end{tabular}
 \end{center}
+
+\clearpage
+
 \section{Conclusiones}
 
 En este trabajo partimos de un autocorrector base centrado en frecuencia 
@@ -274,6 +277,7 @@ en base al error cometido.
 
 Como conclusión general, consideramos que el objetivo del trabajo se 
 cumplió: se logró transformar el corrector inicial en un sistema más 
-robusto y preciso, manteniendo un diseño modular que facilita extenderlo. 
+robusto y preciso, aprendiendo las técnicas y métodos actuales para resolver
+esta problemática. 
 
 \end{document}
