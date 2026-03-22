@@ -1,16 +1,14 @@
 from typing import List, Tuple
 
-from generador_muestras import GeneradorMuestras
+from cargador_corpus import LectorCorpus
 from autocorrector import Autocorrector
 
 # Configuración
-ratio_error = 0.5
 ruta_directorio_libros = "./libros"
 
 def cargar_train_test():
-    generador = GeneradorMuestras(
-        ruta_directorio_libros=ruta_directorio_libros,
-        ratio_error=ratio_error
+    generador = LectorCorpus(
+        ruta_directorio_libros=ruta_directorio_libros
     )
     X_train = generador.get_corpus()
     X_test = [
