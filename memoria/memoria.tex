@@ -118,7 +118,31 @@ Luego por último, implementamos una función recursiva encargada de obtener los
 
 \section{Propuestas de Mejora}
 \subsection{Algoritmos Implementados}
+\subsubsection{Contexto / n-gramas}
 
+\paragraph{Introducción.}
+Para esta mejora al modelo de autocorrección, se propone evolucionar el modelo de unigramas hacia bigramas o trigramas. Esto permitirá capturar información contextual y mejorar la precisión de las sugerencias, especialmente en casos donde la palabra escrita existe en el diccionario pero no tiene sentido en la oración (ej: "la gran 'automóvil'").
+
+\paragraph{Implementación.}
+El algoritmo que implementamos sigue los siguientes pasos:
+
+\begin{enumerate}
+    \item Llega una frase a corregir
+    \item Para cada palabra de la frase
+        \subitem Si esta en el vocabulario --> La dejamos como esta
+        \subitem Si no está en el vocabulario --> Obtenemos todas las palabras cercanas y frecuentes junto con sus probabilidades de contexto (probabilidades que indican como de bien encajan esas palabras allí) y luego se elige la de mayor probabilidad.
+    \item Devolvemos la frase corregida
+\end{enumerate}
+
+\paragraph{Hiperparámetros.}
+Esta mejora utiliza 2 hiperparámetros que son \textbf{min\_appearances} (mínima cantidad de apariciones de la frase en el corpus para no ser reemplazada por el token \texttt{<UNK>}) y \textbf{n} (número de palabras por n-grama).
+
+\paragraph{Validación de hiperparámetros.}
+Para validar los hiperparámetros, definimos un conjunto de validación específico, compuesto por frases con errores ortográficos. Se experimenta con el rango $[1;20]$ (step=1) de \textbf{min\_appearances} para evaluar su impacto en la precisión de las correcciones, utilizando la metrica de accuracy\_score, donde si la frase corregida es igual a la frase correcta, entonces suma 1. \textbf{n} se mantiene como 2, ya que para n mayor se requiere una alta cantidad de memoria para almacenar las matrices.
+
+
+
+\subsubsection{Distancia física de teclado}
 
 \subsection{Estructura del Código}
 \begin{lstlisting}
@@ -127,6 +151,33 @@ Luego por último, implementamos una función recursiva encargada de obtener los
 
 \section{Resultados}
 Presentar métricas de desempeño y comparativas.
+
+\subsection{Resultados por método}
+\subsubsection{Contexto / n-gramas}
+
+\paragraph{Resultados de la validación realizada.}
+Encontramos que para \textbf{min\_appearances} igual a 2, 3, 4, 6 y 11 se obtiene el mejor resultado (\texttt{accuracy\_score} 40\%), lo que indica que el modelo corrige correctamente el 40\% de las frases del conjunto de validación.
+
+Esto señala que el modelo requiere un balance entre capturar patrones frecuentes del corpus y evitar ser demasiado restrictivo. 
+
+Un \texttt{min\_appearances} bajo (como 1-2) permite corregir más casos, pero puede introducir ruido de n-gramas poco representativos. Un valor más alto (como 11) filtra mejor el ruido pero puede perder correcciones válidas. 
+
+Nos quedamos con \texttt{min\_appearances} = 11 para la evaluación final, ya que es el valor más alto que mantiene el mejor resultado, lo cual nos permite obtener un modelo con una mejor capacidad de generalización, y más flexibilidad ante textos con palabras nuevas.
+
+Este resultado sugiere que la mejora con n-gramas es moderada, probablemente porque:
+\begin{enumerate}
+    \item El corpus de entrenamiento es limitado, lo que restringe la cobertura de bigramas.
+    \item El contexto por sí solo no es suficiente sin combinar otras señales como la distancia de edición ponderada.
+\end{enumerate} 
+
+Aún contando con un corpus mayor, los bigramas no aportan suficiente información contextual. Por ejemplo, frases que comiencen por 'el': el pajaro, el raton, el coche, el ordenador, son bigramas que no aportan información útil para el contexto.
+
+\subsubsection{Distancia física de teclado}
+
+\subsubsection{Combinacion (Contexto + Distancia)}
+
+\subsection{Tabla comparativa}
+
 
 \section{Conclusiones}
 Resumen de mejoras logradas y trabajo futuro.
