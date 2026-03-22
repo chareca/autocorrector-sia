@@ -86,6 +86,7 @@ class Autocorrector:
         elif self._modo == "ambos":
             frase_corregida = []
             frase_split = frase_lower.split()
+            normalizar = lambda s: s.translate(str.maketrans("áéíóúü", "aeiouu"))
             for pos_pal, pal in enumerate(frase_split):
                 if pal in self._vocabulario:
                     frase_corregida.append(pal)
@@ -96,14 +97,16 @@ class Autocorrector:
 
                 distancias = np.array(distancias)
                 probabilidades = np.array(probabilidades)
-                distancias = (distancias - np.min(distancias)) / (np.max(distancias) - np.min(distancias))
-                probabilidades = (probabilidades - np.min(probabilidades)) / (np.max(probabilidades) - np.min(probabilidades))
+                rango_distancias = np.max(distancias) - np.min(distancias)
+                rango_probabilidades = np.max(probabilidades) - np.min(probabilidades)
+                distancias = np.zeros_like(distancias) if rango_distancias == 0 else (distancias - np.min(distancias)) / rango_distancias
+                probabilidades = np.zeros_like(probabilidades) if rango_probabilidades == 0 else (probabilidades - np.min(probabilidades)) / rango_probabilidades
 
                 palabras_elegidas = []
                 for i, palabra_distancia in enumerate(palabras_distancia):
                     for j, palabra_contexto in enumerate(palabras_contexto):
-                        if palabra_distancia == palabra_contexto:
-                            palabras_elegidas.append((palabra_distancia, distancias[i], probabilidades[j]))
+                        if palabra_distancia == normalizar(palabra_contexto):
+                            palabras_elegidas.append((palabra_contexto, distancias[i], probabilidades[j]))
                             break
                 
                 if len(palabras_elegidas) == 0:
