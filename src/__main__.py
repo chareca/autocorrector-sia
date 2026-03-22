@@ -4,7 +4,7 @@ from cargador_corpus import LectorCorpus
 from autocorrector import Autocorrector
 
 # Configuración
-ruta_directorio_libros = "autocorrector-sia/libros"
+ruta_directorio_libros = "./libros"
 
 def cargar_train_test():
     generador = LectorCorpus(
