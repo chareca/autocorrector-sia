@@ -143,8 +143,24 @@ Para validar los hiperparámetros, definimos un conjunto de validación específ
 
 
 \subsubsection{Distancia física de teclado}
+\paragraph{Introducción.}
+En esta mejora del modelo, proponemos modificar la penalización de las ediciones para considerar la cercanía física de las teclas en un teclado QWERTY. La idea es que los errores de tipeo más comunes suelen involucrar teclas adyacentes, por lo que asignar un coste menor a estas ediciones puede mejorar la precisión del autocorrector.
+\paragraph{Implementación.}
+Para cumplir este objetivo, utilizamos un diccionario que asigna a cada letra su posición en el teclado QWERTY. Luego, calcular la distancia euclídea de edición entre dos palabras, se modifica el coste de la operación de reemplazo/sustitución según la proximidad de las teclas involucradas. Por ejemplo, si la letra 'a' se sustituye por 's', que es una tecla adyacente, el coste de esta operación será menor que si se sustituyera por 'p', que está más alejada.
 
-\subsection{Estructura del Código}
+El algoritmo final para la distancia de la frase corregida a la original se mantiene igual, usando la distancia de Levenshtein, pero con los costes de edición ajustados según la proximidad de las teclas. Esto se implementa modificando la función que calcula el coste de cada operación de edición para incorporar la distancia física entre las teclas.
+\paragraph{Hiperparámetros.}
+Incorporamos un hiperparámetro adicional, \textbf{a}, que controla la importancia de la distancia física en el coste total de edición. Un valor de \textbf{a} igual a 1 indica que la distancia física tiene influencia máxima, mientras que con valores más altos, le da un peso menor a esta consideración.
+
+\paragraph{Validación de hiperparámetros.}
+Realizamos una validación cruzada de los siguientes valores para cada hiperparámetro:
+\begin{itemize}
+    \item \textbf{min\_appearances}: $[1;5]$ (step=1)
+    \item \textbf{a}: $[1, 1.5, 2, 3, 4]$
+    \item \textbf{costo\_intercambio}: $[0.1, 0.2, 0.25, 0.5, 1]$
+\end{itemize}
+
+ \subsection{Estructura del Código}
 \begin{lstlisting}
 # Poner codigo
 \end{lstlisting}
@@ -156,7 +172,7 @@ Presentar métricas de desempeño y comparativas.
 \subsubsection{Contexto / n-gramas}
 
 \paragraph{Resultados de la validación realizada.}
-Encontramos que para \textbf{min\_appearances} igual a 2, 3, 4, 6 y 11 se obtiene el mejor resultado (\texttt{accuracy\_score} 40\%), lo que indica que el modelo corrige correctamente el 40\% de las frases del conjunto de validación.
+Encontramos que para \textbf{min\_appearances} igual a 2, 3, 6, 10 y 11 se obtiene el mejor resultado (\texttt{accuracy\_score} 75\%), lo que indica que el modelo corrige correctamente el 75\% de las frases del conjunto de validación.
 
 Esto señala que el modelo requiere un balance entre capturar patrones frecuentes del corpus y evitar ser demasiado restrictivo. 
 
