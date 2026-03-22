@@ -63,6 +63,7 @@ class Autocorrector:
         elif self._modo == "contexto":
             frase_corregida = []
             frase_split = frase_lower.split()
+            normalizar = lambda s: s.translate(str.maketrans("áéíóúü", "aeiouu"))
             for pos_pal, pal in enumerate(frase_split):
                 if pal in self._vocabulario:
                     frase_corregida.append(pal)
@@ -74,8 +75,8 @@ class Autocorrector:
                 palabras_elegidas = []
                 for palabra_distancia in palabras_distancia:
                     for i, palabra_contexto in enumerate(palabras_contexto):
-                        if palabra_distancia == palabra_contexto:
-                            palabras_elegidas.append((palabra_distancia, probabilidades[i]))
+                        if palabra_distancia == normalizar(palabra_contexto):
+                            palabras_elegidas.append((palabra_contexto, probabilidades[i]))
                             break
                 palabras_elegidas = sorted(palabras_elegidas, key=lambda x: -x[1])
 
