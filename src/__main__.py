@@ -5,7 +5,7 @@ from autocorrector import Autocorrector
 
 # Configuración
 ratio_error = 0.5
-ruta_directorio_libros = "autocorrector-sia/libros"
+ruta_directorio_libros = "./libros"
 
 def cargar_train_test():
     generador = GeneradorMuestras(
@@ -22,7 +22,7 @@ def cargar_train_test():
         ("Sin embargo, esta frase me gusta más", "Sin embargo, esta frase qe gusta más"), # Error de reemplazo (Mucha distancia)
         ("Ya queda menos para terminar", "Ya qeuda menos para terminar"), # Error de intercambio
         ("Espero que saquemos buena nota", "Espero que saquemos buean nota"), # Error de intercambio
-        ("Algún día me iré de aquí", "Algún dia me iré de aquí"), # Las tildes
+        ("Algún día me iré de aquí", "Algún dua me iré de aquí"), # Las tildes
         ("Ojalá ganara el partido", "Ojala ganara el partido"), # Las tildes
         ("Tuvo un buen día", "Tubo un buen día"), # Error de contexto
         ("Voy a ver a mi amigo", "Voy a haber a mi amigo"), # Error de contexto

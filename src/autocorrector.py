@@ -26,7 +26,7 @@ class Autocorrector:
             self._sistema_distancias = SistemaDistancias()
             self._sistema_distancias.fit(X_train)
         elif self._modo == "contexto":
-            self._sistema_distancias = SistemaDistancias()
+            self._sistema_distancias = SistemaDistancias(a=1.0, min_freq=1, intercambiar=True, usar_cercania_teclado=False)
             self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=self._numero_ngramas)
             self._sistema_distancias.fit(X_train)
             self._sistema_contexto.fit(X_train)
@@ -68,7 +68,7 @@ class Autocorrector:
                     frase_corregida.append(pal)
                     continue
 
-                palabras_distancia, _ = self._sistema_distancias.predict(palabra=pal, max_correciones=10, intercambiar=True)
+                palabras_distancia, _ = self._sistema_distancias.predict(palabra=pal, max_correciones=10, intercambiar=False, a=1.0, min_freq=1, solo_original_si_conocida=False)
                 palabras_contexto, probabilidades = self._sistema_contexto.predict(frase_split, pos_pal, num_sugerencias=300_000) # 300_000 para que nos sugiera todas las que pueda
 
                 palabras_elegidas = []

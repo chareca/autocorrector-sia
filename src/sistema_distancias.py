@@ -4,7 +4,7 @@ import numpy as np
 
 
 class SistemaDistancias:
-    def __init__(self, a: float = 2.0, min_freq: int = 3, top_k: int = 10, intercambiar: bool = True, costo_intercambio: float = 0.1):
+    def __init__(self, a: float = 2.0, min_freq: int = 3, top_k: int = 10, intercambiar: bool = True, costo_intercambio: float = 0.1, usar_cercania_teclado: bool = True):
         if a <= 0:
             raise ValueError("a debe ser > 0")
         if min_freq < 1:
@@ -19,6 +19,7 @@ class SistemaDistancias:
         self._top_k = top_k
         self._intercambiar = intercambiar
         self._costo_intercambio = costo_intercambio
+        self._usar_cercania_teclado = usar_cercania_teclado
 
         self._alphabet = "abcdefghijklmnñopqrstuvwxyz"
         self._words = {}
@@ -32,7 +33,7 @@ class SistemaDistancias:
             for word in linea.split():
                 self._words[word] = self._words.get(word, 0) + 1
 
-    def predict(self, palabra: str, max_correciones: int | None = None, intercambiar: bool | None = None, a: float | None = None, min_freq: int | None = None) -> Tuple[List[str], List[float]]:
+    def predict(self, palabra: str, max_correciones: int | None = None, intercambiar: bool | None = None, a: float | None = None, min_freq: int | None = None, solo_original_si_conocida: bool = True) -> Tuple[List[str], List[float]]:
         palabra = self._normalizar_palabra(palabra)
         if not palabra:
             return [], []
@@ -52,7 +53,7 @@ class SistemaDistancias:
         if min_freq is None:
             min_freq = self._min_freq
 
-        ranking = self._sugerencias(palabra,top_k=max_correciones,intercambiar=intercambiar,a=a,min_freq=min_freq)
+        ranking = self._sugerencias(palabra,top_k=max_correciones,intercambiar=intercambiar,a=a,min_freq=min_freq,solo_original_si_conocida=solo_original_si_conocida)
 
         palabras = [word for word, _, _ in ranking]
         distancias = [distancia for _, distancia, _ in ranking]
@@ -119,17 +120,18 @@ class SistemaDistancias:
     def _palabras_conocidas(self, candidatas: set[str], min_freq: int = 3) -> set[str]:
         return {pal for pal in candidatas if self._words.get(pal, 0) >= min_freq}
 
-    def _candidatos(self, word: str, intercambiar: bool = True, min_freq: int = 3) -> set[str]:
-        if self._words.get(word, 0) >= min_freq:
-            return {word}
+    def _candidatos(self, word: str, intercambiar: bool = True, min_freq: int = 3, solo_original_si_conocida: bool = True) -> set[str]:
+        conocidas = {word} if self._words.get(word, 0) >= min_freq else set()
+        if conocidas and solo_original_si_conocida:
+            return conocidas
         c1 = self._palabras_conocidas(self._una_edicion(word, intercambiar),min_freq=min_freq,)
         if c1:
-            return c1
+            return conocidas.union(c1)
         c2 = self._palabras_conocidas(self._dos_ediciones(word, intercambiar),min_freq=min_freq,)
         if c2:
-            return c2
+            return conocidas.union(c2)
 
-        return {word}
+        return conocidas or {word}
 
     def _mapa_teclado_es(self) -> dict[str, tuple[int, int]]:
         filas = ["qwertyuiop", "asdfghjklñ", "zxcvbnm"]
@@ -147,6 +149,9 @@ class SistemaDistancias:
     def _costo_reemplazo(self, letra_origen: str, letra_destino: str, a: float = 2.0) -> float:
         if letra_origen == letra_destino:
             return 0.0
+
+        if not self._usar_cercania_teclado:
+            return 1.0
 
         pos_origen = self._teclado_pos.get(letra_origen)
         pos_destino = self._teclado_pos.get(letra_destino)
@@ -178,9 +183,9 @@ class SistemaDistancias:
 
         return matriz[filas - 1][columnas - 1]
 
-    def _sugerencias(self, word: str,top_k: int = 10, intercambiar: bool = True, a: float = 2.0, min_freq: int = 3):
+    def _sugerencias(self, word: str,top_k: int = 10, intercambiar: bool = True, a: float = 2.0, min_freq: int = 3, solo_original_si_conocida: bool = True):
         word = self._normalizar_palabra(word)
-        cands = self._candidatos(word, intercambiar, min_freq=min_freq)
+        cands = self._candidatos(word, intercambiar, min_freq=min_freq, solo_original_si_conocida=solo_original_si_conocida)
 
         ranking = []
         for cand in cands:
