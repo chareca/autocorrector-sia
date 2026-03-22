@@ -4,7 +4,7 @@ from cargador_corpus import LectorCorpus
 from autocorrector import Autocorrector
 
 # Configuración
-ruta_directorio_libros = "./libros"
+ruta_directorio_libros = "autocorrector-sia/libros"
 
 def cargar_train_test():
     generador = LectorCorpus(
@@ -64,10 +64,10 @@ if __name__ == '__main__':
     autocorrector_distancias.fit(X_train)
     evaluar_autocorrector("AutocorrectorDistancias", autocorrector_distancias, X_test)
 
-    autocorrector_contexto = Autocorrector(modo="contexto", numero_ngramas=2)
+    autocorrector_contexto = Autocorrector(modo="contexto", numero_ngramas=2, min_apperance=11)
     autocorrector_contexto.fit(X_train)
     evaluar_autocorrector("AutocorrectorContexto", autocorrector_contexto, X_test)
 
-    autocorrector_ambos = Autocorrector(modo="ambos", numero_ngramas=2)
+    autocorrector_ambos = Autocorrector(modo="ambos", numero_ngramas=2, min_apperance=11)
     autocorrector_ambos.fit(X_train)
     evaluar_autocorrector("AutocorrectorDistanciasContexto", autocorrector_ambos, X_test)

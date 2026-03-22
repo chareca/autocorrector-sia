@@ -7,14 +7,15 @@ from sistema_distancias import SistemaDistancias
 from sistema_contexto import SistemaContexto
 
 class Autocorrector:
-    def __init__(self, modo: str=Literal["distancias", "contexto", "ambos"], numero_ngramas: int=None):
+    def __init__(self, modo: str=Literal["distancias", "contexto", "ambos"], numero_ngramas: int=None, min_apperance: int=None):
         if not(modo in ["distancias", "contexto", "ambos"]):
             raise ValueError("Requisito: El modo solo puede ser \"distancias\", \"contexto\" o \"ambos\"")
-        if (modo == "contexto" or modo == "ambos") and numero_ngramas == None:
+        if (modo == "contexto" or modo == "ambos") and (numero_ngramas == None or min_apperance == None):
             raise ValueError("Requisito: Se debe especificar el número de ngramas")
 
         self._modo = modo
         self._numero_ngramas = numero_ngramas
+        self._min_apperance = min_apperance
 
         self._sistema_distancias = None
         self._sistema_contexto = None
@@ -27,12 +28,12 @@ class Autocorrector:
             self._sistema_distancias.fit(X_train)
         elif self._modo == "contexto":
             self._sistema_distancias = SistemaDistancias(a=1.0, min_freq=1, intercambiar=True, usar_cercania_teclado=False)
-            self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=self._numero_ngramas)
+            self._sistema_contexto = SistemaContexto(min_apperance=self._min_apperance, size_ngram=self._numero_ngramas)
             self._sistema_distancias.fit(X_train)
             self._sistema_contexto.fit(X_train)
         elif self._modo == "ambos":
             self._sistema_distancias = SistemaDistancias()
-            self._sistema_contexto = SistemaContexto(min_apperance=10, size_ngram=self._numero_ngramas)
+            self._sistema_contexto = SistemaContexto(min_apperance=self._min_apperance, size_ngram=self._numero_ngramas)
             self._sistema_distancias.fit(X_train)
             self._sistema_contexto.fit(X_train)
         
